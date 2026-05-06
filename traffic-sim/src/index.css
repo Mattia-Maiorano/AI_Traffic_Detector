@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --ink: #0f172a;
+    --ink-muted: #475569;
+    --accent: #0f766e;
+    --accent-strong: #0d9488;
+    --bg: #f8fafc;
+    --panel: rgba(255, 255, 255, 0.92);
+    --panel-border: rgba(15, 23, 42, 0.12);
+    --grid: rgba(15, 23, 42, 0.08);
+    --glow: rgba(15, 118, 110, 0.25);
+    font-family: "Avenir Next", "Avenir", "Trebuchet MS", "Lucida Grande", sans-serif;
+    color: var(--ink);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(14, 116, 144, 0.16), transparent 60%),
+        radial-gradient(900px 520px at 90% 20%, rgba(245, 158, 11, 0.16), transparent 60%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    color: var(--ink);
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+        linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 0.5;
+    z-index: 0;
+}
+
+#root {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+}
+
+canvas {
+    display: block;
+}

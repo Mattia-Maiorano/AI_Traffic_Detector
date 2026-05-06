@@ -1,0 +1,69 @@
+import { create } from 'zustand'
+import { subscribeWithSelector } from 'zustand/middleware'
+import type { SimulationStore } from './types'
+import { applyTrafficLights, createTownMap } from './map'
+
+// 1. Define global application constants
+const DEFAULT_SPAWN_RATE = 2
+const CANVAS_WIDTH = 900
+const CANVAS_HEIGHT = 600
+
+// 2. Initialize the manual town map instead of the procedural grid
+const mapData = createTownMap(CANVAS_WIDTH, CANVAS_HEIGHT)
+
+export const useSimulationStore = create<SimulationStore>()(
+    subscribeWithSelector((set) => ({
+        // Map Geometry and Logic[cite: 3, 4]
+        nodes: mapData.nodes,
+        edges: mapData.edges,
+        entryNodeIds: mapData.entryNodeIds,
+        exitNodeIds: mapData.exitNodeIds,
+        canvasWidth: mapData.width,
+        canvasHeight: mapData.height,
+
+        // Simulation State[cite: 3, 4]
+        cars: [],
+        running: true,
+        spawnRate: DEFAULT_SPAWN_RATE,
+        lightPhase: 0,
+        simTime: 0,
+        resetToken: 0,
+
+        // Actions[cite: 3, 4]
+        setRunning: (running) => set({ running }),
+        setSpawnRate: (spawnRate) => set({ spawnRate }),
+        setCars: (cars) => set({ cars }),
+        setSimTime: (simTime) => set({ simTime }),
+
+        setLightPhase: (phase) =>
+            set((state) => ({
+                lightPhase: phase,
+                edges: applyTrafficLights(state.edges, phase),
+            })),
+
+        toggleLightPhase: () =>
+            set((state) => {
+                const nextPhase: 0 | 1 = state.lightPhase === 0 ? 1 : 0
+                return {
+                    lightPhase: nextPhase,
+                    edges: applyTrafficLights(state.edges, nextPhase),
+                }
+            }),
+
+        resetSimulation: () =>
+            set((state) => ({
+                cars: [],
+                simTime: 0,
+                lightPhase: 0,
+                resetToken: state.resetToken + 1,
+                edges: applyTrafficLights(state.edges, 0),
+            })),
+    })),
+)
+
+// Updated defaults for UI components[cite: 3]
+export const simulationDefaults = {
+    spawnRate: DEFAULT_SPAWN_RATE,
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+}
