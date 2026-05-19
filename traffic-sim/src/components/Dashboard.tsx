@@ -28,6 +28,8 @@ export const Dashboard = () => {
             edges: edges.map((edge) => ({
                 edgeId: edge.id,
                 carCount: counts.get(edge.id) ?? 0,
+                edgeCapacity: edge.capacity,
+                edgeDensity: counts.get(edge.id)! / edge.capacity,
             })),
         }
 
