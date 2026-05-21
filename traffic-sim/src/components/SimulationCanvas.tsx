@@ -46,11 +46,12 @@ export const SimulationCanvas = () => {
     const renderMetaRef = useRef<Map<string, EdgeRender> | null>(null)
     const canvasWidth = useSimulationStore((state) => state.canvasWidth)
     const canvasHeight = useSimulationStore((state) => state.canvasHeight)
+    const nodes = useSimulationStore((state) => state.nodes)
+    const edges = useSimulationStore((state) => state.edges)
 
     useEffect(() => {
-        const state = useSimulationStore.getState()
-        renderMetaRef.current = buildEdgeRender(state.nodes, state.edges)
-    }, [])
+        renderMetaRef.current = buildEdgeRender(nodes, edges)
+    }, [nodes, edges])
 
     useEffect(() => {
         const canvas = canvasRef.current
@@ -75,7 +76,7 @@ export const SimulationCanvas = () => {
             }
 
             // 1. Get current snapshot of the world
-            const { cars, edges } = useSimulationStore.getState()
+            const { cars, edges: currentEdges, nodes: currentNodes } = useSimulationStore.getState()
 
             // 2. Map cars to their edges for fast density calculation
             const carCounts = new Map<string, number>()
@@ -89,7 +90,7 @@ export const SimulationCanvas = () => {
             // 3. Draw Edges with Heatmap Logic
             ctx.lineWidth = 3.0 // Thicker lines help visualize the heatmap
 
-            edges.forEach((edgeData) => {
+            currentEdges.forEach((edgeData) => {
                 const renderEdge = meta.get(edgeData.id)
                 if (!renderEdge) return
 
@@ -116,7 +117,36 @@ export const SimulationCanvas = () => {
                 ctx.stroke()
             })
 
-            // 4. Draw Cars (the "dots")[cite: 8]
+            // 4. Draw Injected Nodes & Pedestrian Semaphores
+            currentNodes.forEach((node) => {
+                if (!node.id.includes('_node_')) return
+
+                const incomingEdge = currentEdges.find((e) => e.targetNodeId === node.id)
+
+                if (incomingEdge && incomingEdge.trafficLight !== undefined) {
+                    // Draw a small traffic light indicator
+                    ctx.beginPath()
+                    ctx.arc(node.x, node.y, 4.5, 0, Math.PI * 2)
+                    ctx.fillStyle = incomingEdge.trafficLight === 'red' ? '#ef4444' : '#10b981'
+                    ctx.fill()
+
+                    if (incomingEdge.trafficLight === 'red') {
+                        ctx.beginPath()
+                        ctx.arc(node.x, node.y, 8, 0, Math.PI * 2)
+                        ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)'
+                        ctx.lineWidth = 1.5
+                        ctx.stroke()
+                    }
+                } else {
+                    // Subtle pass-through connection point
+                    ctx.beginPath()
+                    ctx.arc(node.x, node.y, 2.5, 0, Math.PI * 2)
+                    ctx.fillStyle = '#94a3b8' // Slate 400
+                    ctx.fill()
+                }
+            })
+
+            // 5. Draw Cars (the "dots")
             ctx.fillStyle = '#1e293b' // Darker color for contrast against heatmap
             cars.forEach((car) => {
                 const edge = meta.get(car.edgeId)

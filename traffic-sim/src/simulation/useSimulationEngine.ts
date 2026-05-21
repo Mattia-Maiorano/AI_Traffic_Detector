@@ -248,7 +248,7 @@ export const useSimulationEngine = () => {
         )
         const unsubReset = store.subscribe(
             (state) => state.resetToken,
-            (_token: number) => {
+            () => {
                 resetPendingRef.current = true
             },
         )
@@ -283,6 +283,10 @@ export const useSimulationEngine = () => {
                 carIdRef.current = 0
                 lastTime = now
                 resetPendingRef.current = false
+
+                // Rebuild engine's edge and node cache
+                const state = store.getState()
+                metaRef.current = buildEdgeMeta(state.nodes, state.edges)
             }
 
             if (runningRef.current) {

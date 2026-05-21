@@ -1,5 +1,6 @@
-import { Download, Pause, Play, RotateCcw, Sliders } from 'lucide-react'
+import { Download, Network, Pause, Play, RotateCcw, Sliders } from 'lucide-react'
 import { useSimulationStore } from '../simulation/store'
+import { TOPOLOGY_CONFIG } from '../simulation/map'
 
 const clamp = (value: number, min: number, max: number) =>
     Math.min(max, Math.max(min, value))
@@ -10,10 +11,15 @@ export const Dashboard = () => {
     const setRunning = useSimulationStore((state) => state.setRunning)
     const setSpawnRate = useSimulationStore((state) => state.setSpawnRate)
     const resetSimulation = useSimulationStore((state) => state.resetSimulation)
+    const edges = useSimulationStore((state) => state.edges)
+    const nodes = useSimulationStore((state) => state.nodes)
+
+    const subEdgeCount = edges.filter(e => e.isSubedge).length
+    const injectedNodeCount = nodes.filter(n => n.id.includes('_node_')).length
 
     const handleExport = () => {
-        const { cars, edges } = useSimulationStore.getState()
-        const counts = new Map(edges.map((edge) => [edge.id, 0]))
+        const { cars, edges: storeEdges } = useSimulationStore.getState()
+        const counts = new Map(storeEdges.map((edge) => [edge.id, 0]))
 
         cars.forEach((car) => {
             counts.set(car.edgeId, (counts.get(car.edgeId) ?? 0) + 1)
@@ -25,7 +31,7 @@ export const Dashboard = () => {
                 edgeId: car.edgeId,
                 distanceAlongEdge: Number(car.distanceAlongEdge.toFixed(2)),
             })),
-            edges: edges.map((edge) => ({
+            edges: storeEdges.map((edge) => ({
                 edgeId: edge.id,
                 carCount: counts.get(edge.id) ?? 0,
                 edgeCapacity: edge.capacity,
@@ -116,6 +122,33 @@ export const Dashboard = () => {
                 <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
                     <span>0</span>
                     <span>8 cars/s</span>
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                    <Network className="h-4 w-4 text-teal-600" />
+                    Topology Engine
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-slate-600">
+                    <div className="rounded-xl border border-slate-200/50 bg-white p-2.5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sub-edges</p>
+                        <p className="mt-1 text-sm font-extrabold text-slate-800">{subEdgeCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/50 bg-white p-2.5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Injected Nodes</p>
+                        <p className="mt-1 text-sm font-extrabold text-slate-800">{injectedNodeCount}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/50 bg-white p-2.5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Max Segment</p>
+                        <p className="mt-1 text-sm font-extrabold text-slate-800">{TOPOLOGY_CONFIG.MAX_EDGE_LENGTH}px</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/50 bg-white p-2.5 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pedestrian stops</p>
+                        <p className="mt-1 text-sm font-extrabold text-slate-800 capitalize">
+                            {TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE === 'pass-through' ? 'Disabled' : 'Enabled'}
+                        </p>
+                    </div>
                 </div>
             </div>
 

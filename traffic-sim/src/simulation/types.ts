@@ -16,6 +16,10 @@ export type Edge = {
     speedLimit: number
     trafficLight?: TrafficLight
     capacity: number
+    parentEdgeId?: string
+    subEdgeIndex?: number
+    totalSubEdges?: number
+    isSubedge?: boolean
 }
 
 export type Car = {

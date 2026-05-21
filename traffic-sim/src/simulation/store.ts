@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import type { SimulationStore } from './types'
-import { applyTrafficLights, createTownMap } from './map'
+import { applyTrafficLightsForGraph, createTownMap, TOPOLOGY_CONFIG } from './map'
 
 // 1. Define global application constants
 const DEFAULT_SPAWN_RATE = 2
@@ -13,7 +13,7 @@ const mapData = createTownMap(CANVAS_WIDTH, CANVAS_HEIGHT)
 
 export const useSimulationStore = create<SimulationStore>()(
     subscribeWithSelector((set) => ({
-        // Map Geometry and Logic[cite: 3, 4]
+        // Map Geometry and Logic
         nodes: mapData.nodes,
         edges: mapData.edges,
         entryNodeIds: mapData.entryNodeIds,
@@ -21,7 +21,7 @@ export const useSimulationStore = create<SimulationStore>()(
         canvasWidth: mapData.width,
         canvasHeight: mapData.height,
 
-        // Simulation State[cite: 3, 4]
+        // Simulation State
         cars: [],
         running: true,
         spawnRate: DEFAULT_SPAWN_RATE,
@@ -29,7 +29,7 @@ export const useSimulationStore = create<SimulationStore>()(
         simTime: 0,
         resetToken: 0,
 
-        // Actions[cite: 3, 4]
+        // Actions
         setRunning: (running) => set({ running }),
         setSpawnRate: (spawnRate) => set({ spawnRate }),
         setCars: (cars) => set({ cars }),
@@ -38,7 +38,7 @@ export const useSimulationStore = create<SimulationStore>()(
         setLightPhase: (phase) =>
             set((state) => ({
                 lightPhase: phase,
-                edges: applyTrafficLights(state.edges, phase),
+                edges: applyTrafficLightsForGraph(state.edges, phase, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
             })),
 
         toggleLightPhase: () =>
@@ -46,7 +46,7 @@ export const useSimulationStore = create<SimulationStore>()(
                 const nextPhase: 0 | 1 = state.lightPhase === 0 ? 1 : 0
                 return {
                     lightPhase: nextPhase,
-                    edges: applyTrafficLights(state.edges, nextPhase),
+                    edges: applyTrafficLightsForGraph(state.edges, nextPhase, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
                 }
             }),
 
@@ -56,7 +56,7 @@ export const useSimulationStore = create<SimulationStore>()(
                 simTime: 0,
                 lightPhase: 0,
                 resetToken: state.resetToken + 1,
-                edges: applyTrafficLights(state.edges, 0),
+                edges: applyTrafficLightsForGraph(state.edges, 0, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
             })),
     })),
 )
