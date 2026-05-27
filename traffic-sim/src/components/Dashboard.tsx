@@ -31,12 +31,25 @@ export const Dashboard = () => {
                 edgeId: car.edgeId,
                 distanceAlongEdge: Number(car.distanceAlongEdge.toFixed(2)),
             })),
-            edges: storeEdges.map((edge) => ({
+            edges: storeEdges.map((edge) => {
+                const density = counts.get(edge.id)! / edge.capacity
+                let color = 120
+                if (density >= 0.75){
+                    color = 3
+                } else if (density >= 0.5) {
+                    color = 2
+                } else if (density >= 0.25) {
+                    color = 1
+                } else {
+                    color = 0
+                }
+                return {
                 edgeId: edge.id,
                 carCount: counts.get(edge.id) ?? 0,
                 edgeCapacity: edge.capacity,
-                edgeDensity: counts.get(edge.id)! / edge.capacity,
-            })),
+                edgeDensity: density,
+                edgeColor: color,
+            }}),
         }
 
         const blob = new Blob([JSON.stringify(payload, null, 2)], {
