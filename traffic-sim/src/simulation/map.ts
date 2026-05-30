@@ -1,71 +1,26 @@
 import type { Edge, Node } from './types'
 
+// ==========================================
+// 1. CONFIGURATION
+// ==========================================
+
 export const TOPOLOGY_CONFIG = {
     MAX_EDGE_LENGTH: 150, // Compile-time maximum segment length in pixels
-    INTERMEDIATE_NODE_TYPE: 'pass-through' as 'pass-through' | 'semaphore', // 'pass-through' or 'semaphore'
+    INTERMEDIATE_NODE_TYPE: 'pass-through' as 'pass-through' | 'semaphore',
 }
 
-export const RAW_TOWN_NODES: Node[] = [
-    // Perimeter Spoke Nodes
-    { id: 'entry-n', x: 450, y: 20, type: 'entry' },
-    { id: 'exit-n', x: 480, y: 20, type: 'exit' },
-    { id: 'entry-s', x: 450, y: 580, type: 'entry' },
-    { id: 'exit-s', x: 420, y: 580, type: 'exit' },
-    { id: 'entry-w', x: 20, y: 300, type: 'entry' },
-    { id: 'exit-w', x: 20, y: 330, type: 'exit' },
-    { id: 'entry-e', x: 880, y: 300, type: 'entry' },
-    { id: 'exit-e', x: 880, y: 270, type: 'exit' },
+export interface CityGenerationOptions {
+    numRings?: number;          // Number of concentric loops (e.g., Core, Inner, Outer, Bypass)
+    sidesPerRing?: number;      // 4 for a square city, 6 for hexagonal, 8 for octagonal, etc.
+    positionJitter?: number;    // Max pixels nodes can randomly shift (gives organic/curved roads)
+    edgeOmissionChance?: number;// Probability (0.0 to 1.0) that optional connecting streets are skipped
+    maxRetries?: number;        // Safety cutoff for the randomized generation loop
+    internalSpawnCount?: number; // Number of internal spawn points to create (in addition to perimeter entries)
+}
 
-    // Bypass Ring Nodes (Outer Loop)
-    { id: 'b-nw', x: 200, y: 150, type: 'intersection' },
-    { id: 'b-ne', x: 700, y: 150, type: 'intersection' },
-    { id: 'b-sw', x: 200, y: 450, type: 'intersection' },
-    { id: 'b-se', x: 700, y: 450, type: 'intersection' },
-
-    // Central Core Nodes (Inner Loop)
-    { id: 'c-nw', x: 400, y: 250, type: 'intersection' },
-    { id: 'c-ne', x: 500, y: 250, type: 'intersection' },
-    { id: 'c-sw', x: 400, y: 350, type: 'intersection' },
-    { id: 'c-se', x: 500, y: 350, type: 'intersection' },
-]
-
-export const RAW_TOWN_EDGES: Edge[] = [
-    // --- IN-ROUTES (Radial Inward) ---
-    { id: 'v-in-n', sourceNodeId: 'entry-n', targetNodeId: 'b-ne', speedLimit: 80, capacity: 50 },
-    { id: 'v-in-s', sourceNodeId: 'entry-s', targetNodeId: 'b-sw', speedLimit: 80, capacity: 50 },
-    { id: 'h-in-w', sourceNodeId: 'entry-w', targetNodeId: 'b-nw', speedLimit: 80, capacity: 50 },
-    { id: 'h-in-e', sourceNodeId: 'entry-e', targetNodeId: 'b-se', speedLimit: 80, capacity: 50 },
-
-    // --- BYPASS RING (Clockwise) ---
-    { id: 'h-b-nw-ne', sourceNodeId: 'b-nw', targetNodeId: 'b-ne', speedLimit: 60, capacity: 70 },
-    { id: 'v-b-ne-se', sourceNodeId: 'b-ne', targetNodeId: 'b-se', speedLimit: 60, capacity: 70 },
-    { id: 'h-b-se-sw', sourceNodeId: 'b-se', targetNodeId: 'b-sw', speedLimit: 60, capacity: 70 },
-    { id: 'v-b-sw-nw', sourceNodeId: 'b-sw', targetNodeId: 'b-nw', speedLimit: 60, capacity: 70 },
-
-    // --- INWARD CORE SPOKES ---
-    { id: 'v-b-nw-cnw', sourceNodeId: 'b-nw', targetNodeId: 'c-nw', speedLimit: 40, capacity: 40 },
-    { id: 'h-b-ne-cne', sourceNodeId: 'b-ne', targetNodeId: 'c-ne', speedLimit: 40, capacity: 40 },
-    { id: 'h-b-sw-csw', sourceNodeId: 'b-sw', targetNodeId: 'c-sw', speedLimit: 40, capacity: 40 },
-    { id: 'v-b-se-cse', sourceNodeId: 'b-se', targetNodeId: 'c-se', speedLimit: 40, capacity: 40 },
-
-    // --- CENTRAL CORE (Counter-Clockwise Loop) ---
-    { id: 'v-c-nw-sw', sourceNodeId: 'c-nw', targetNodeId: 'c-sw', speedLimit: 30, capacity: 10 },
-    { id: 'h-c-sw-se', sourceNodeId: 'c-sw', targetNodeId: 'c-se', speedLimit: 30, capacity: 10 },
-    { id: 'v-c-se-ne', sourceNodeId: 'c-se', targetNodeId: 'c-ne', speedLimit: 30, capacity: 10 },
-    { id: 'h-c-ne-nw', sourceNodeId: 'c-ne', targetNodeId: 'c-nw', speedLimit: 30, capacity: 10 },
-
-    // --- OUTWARD CORE SPOKES (The Escape Hatches) ---
-    { id: 'h-c-nw-bnw', sourceNodeId: 'c-nw', targetNodeId: 'b-nw', speedLimit: 40, capacity: 40 },
-    { id: 'v-c-ne-bne', sourceNodeId: 'c-ne', targetNodeId: 'b-ne', speedLimit: 40, capacity: 40 },
-    { id: 'v-c-sw-bsw', sourceNodeId: 'c-sw', targetNodeId: 'b-sw', speedLimit: 40, capacity: 40 },
-    { id: 'h-c-se-bse', sourceNodeId: 'c-se', targetNodeId: 'b-se', speedLimit: 40, capacity: 40 },
-
-    // --- OUT-ROUTES (Radial Outward) ---
-    { id: 'v-out-n', sourceNodeId: 'b-ne', targetNodeId: 'exit-n', speedLimit: 70, capacity: 50 },
-    { id: 'v-out-s', sourceNodeId: 'b-sw', targetNodeId: 'exit-s', speedLimit: 70, capacity: 50 },
-    { id: 'h-out-w', sourceNodeId: 'b-nw', targetNodeId: 'exit-w', speedLimit: 70, capacity: 50 },
-    { id: 'h-out-e', sourceNodeId: 'b-se', targetNodeId: 'exit-e', speedLimit: 70, capacity: 50 },
-]
+// ==========================================
+// 2. CORE TOPOLOGY COMPILATION
+// ==========================================
 
 export const compileGraph = (
     rawNodes: Node[],
@@ -148,57 +103,295 @@ export const compileGraph = (
     }
 }
 
-export const applyTrafficLightsForGraph = (
+// ==========================================
+// 3. TRAFFIC LIGHT LOGIC
+// ==========================================
+
+export const applyRealisticTrafficLights = (
     edges: Edge[],
-    phase: 0 | 1,
-    intermediateNodeType: 'pass-through' | 'semaphore'
+    globalTimeSeconds: number,
+    cycleLength: number = 30 // total duration for a full red/green loop
 ): Edge[] => {
     return edges.map((edge) => {
-        // If it's an intermediate subedge (i.e., not the final one in the split chain)
+        // Fix: intermediateNodeType is read directly from TOPOLOGY_CONFIG now
         if (
             edge.isSubedge &&
             edge.subEdgeIndex !== undefined &&
             edge.totalSubEdges !== undefined &&
             edge.subEdgeIndex < edge.totalSubEdges - 1
         ) {
-            if (intermediateNodeType === 'pass-through') {
-                return {
-                    ...edge,
-                    trafficLight: undefined, // Free flow
-                }
+            if (TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE === 'pass-through') {
+                return { ...edge, trafficLight: undefined }
             } else {
-                // If it is 'semaphore', it acts as a pedestrian stop.
-                // They do not need directions (alternating orientation parity). They all toggle together as inline stops.
-                return {
-                    ...edge,
-                    trafficLight: phase === 0 ? 'red' : 'green',
+                // If it's a structural intermediate semaphore, cycle it normally over global time
+                const progress = globalTimeSeconds % cycleLength;
+                return { ...edge, trafficLight: progress < cycleLength / 2 ? 'red' : 'green' }
+            }
+        }
+
+        const isHorizontal = (edge.parentEdgeId ?? edge.id).startsWith('h-')
+        // Pseudo-random offset unique to each intersection's ID or coordinates
+        const stableHash = edge.targetNodeId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const localizedOffset = stableHash % cycleLength;
+
+        // Determine where this specific light is in its own cycle
+        const currentCycleProgress = (globalTimeSeconds + localizedOffset) % cycleLength;
+        const isGreenPhase = currentCycleProgress < (cycleLength / 2);
+
+        // Assign green/red based on direction and localized cycle phase
+        let trafficLight: 'green' | 'red';
+        if (isHorizontal) {
+            trafficLight = isGreenPhase ? 'green' : 'red';
+        } else {
+            trafficLight = isGreenPhase ? 'red' : 'green'; // Vertical is inverted
+        }
+
+        return { ...edge, trafficLight };
+    });
+}
+
+// ==========================================
+// 4. TOPOLOGY VALIDATION GUARD
+// ==========================================
+
+export const validateTopology = (nodes: Node[], edges: Edge[]): void => {
+    const exitNodes = nodes.filter((n) => n.type === 'exit');
+    if (exitNodes.length === 0) {
+        throw new Error("Validation Failed: The map contains zero exit nodes.");
+    }
+
+    const adjList = new Map<string, string[]>();
+    nodes.forEach((n) => adjList.set(n.id, []));
+    edges.forEach((e) => {
+        if (adjList.has(e.sourceNodeId)) {
+            adjList.get(e.sourceNodeId)!.push(e.targetNodeId);
+        }
+    });
+
+    const exitNodeIds = new Set(exitNodes.map((n) => n.id));
+
+    for (const node of nodes) {
+        if (node.type === 'exit') continue;
+
+        const visited = new Set<string>([node.id]);
+        const queue: string[] = [node.id];
+        let canEscape = false;
+
+        while (queue.length > 0) {
+            const currentId = queue.shift()!;
+
+            if (exitNodeIds.has(currentId)) {
+                canEscape = true;
+                break;
+            }
+
+            const neighbors = adjList.get(currentId) || [];
+            for (const neighbor of neighbors) {
+                if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    queue.push(neighbor);
                 }
             }
         }
 
-        // For undivided edges or the last sub-edge in a split chain (which leads to the real intersection)
-        const isHorizontal = (edge.parentEdgeId ?? edge.id).startsWith('h-')
-        const edgeParity = isHorizontal ? 0 : 1
-        return {
-            ...edge,
-            trafficLight: edgeParity === phase ? 'green' : 'red',
+        if (!canEscape) {
+            throw new Error(`Topology Failure: Node "${node.id}" forms a well or dead-end.`);
         }
-    })
-}
-
-export const createTownMap = (width: number, height: number) => {
-    const compiled = compileGraph(RAW_TOWN_NODES, RAW_TOWN_EDGES, TOPOLOGY_CONFIG)
-
-    return {
-        nodes: compiled.nodes,
-        edges: applyTrafficLightsForGraph(
-            compiled.edges,
-            0,
-            TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE
-        ),
-        entryNodeIds: compiled.nodes.filter((n) => n.type === 'entry').map((n) => n.id),
-        exitNodeIds: compiled.nodes.filter((n) => n.type === 'exit').map((n) => n.id),
-        width,
-        height,
     }
-}
+};
+
+// ==========================================
+// 5. AUTONOMOUS MAP GENERATOR
+// ==========================================
+
+/**
+ * Fully autonomous, randomized procedural city generator.
+ * Automatically loops and self-corrects if it rolls an inescapable trap.
+ */
+export const createRandomTownMap = (
+    width: number,
+    height: number,
+    options: CityGenerationOptions = {}
+) => {
+    const numRings = options.numRings ?? 3; // Fixed default ring depth to prevent layout overcrowding
+    const sidesPerRing = options.sidesPerRing ?? 8;
+    const positionJitter = options.positionJitter ?? 50;
+    const edgeOmissionChance = options.edgeOmissionChance ?? 0.15;
+    const maxRetries = options.maxRetries ?? 50;
+    const internalSpawnCount = options.internalSpawnCount ?? 15;
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    let attempts = 0;
+
+    while (attempts < maxRetries) {
+        attempts++;
+        try {
+            const rawNodes: Node[] = [];
+            const rawEdges: Edge[] = [];
+
+            const maxRadius = Math.min(centerX, centerY) * 0.85;
+            const ringSpacing = maxRadius / numRings;
+
+            // --- A: RINGS ---
+            for (let ringIdx = 0; ringIdx < numRings; ringIdx++) {
+                const currentRadius = (ringIdx + 1) * ringSpacing;
+                const speedLimit = 30 + ringIdx * 15;
+                const capacity = 20 + ringIdx * 20;
+                const isClockwise = ringIdx % 2 === 0;
+
+                for (let i = 0; i < sidesPerRing; i++) {
+                    const baseAngle = (i * 2 * Math.PI) / sidesPerRing;
+                    const angleJitter = (Math.random() - 0.5) * 0.15;
+                    const finalAngle = baseAngle + angleJitter;
+                    const finalRadius = currentRadius + (Math.random() - 0.5) * positionJitter;
+
+                    const x = Math.max(20, Math.min(width - 20, centerX + Math.cos(finalAngle) * finalRadius));
+                    const y = Math.max(20, Math.min(height - 20, centerY + Math.sin(finalAngle) * finalRadius));
+
+                    rawNodes.push({ id: `node-r${ringIdx}-v${i}`, x, y, type: 'intersection' });
+                }
+
+                for (let i = 0; i < sidesPerRing; i++) {
+                    const nextIdx = isClockwise ? (i + 1) % sidesPerRing : (i + sidesPerRing - 1) % sidesPerRing;
+                    const sourceId = `node-r${ringIdx}-v${i}`;
+                    const targetId = `node-r${ringIdx}-v${nextIdx}`;
+                    const prefix = Math.abs(i - nextIdx) % 2 === 0 ? 'h-' : 'v-';
+
+                    rawEdges.push({
+                        id: `${prefix}ring-${ringIdx}-edge-${i}`,
+                        sourceNodeId: sourceId,
+                        targetNodeId: targetId,
+                        speedLimit,
+                        capacity,
+                    });
+                }
+            }
+
+            // --- B: INTER-RING RADIAL SPOKES ---
+            for (let ringIdx = 0; ringIdx < numRings - 1; ringIdx++) {
+                for (let i = 0; i < sidesPerRing; i++) {
+                    const currentRingNodeId = `node-r${ringIdx}-v${i}`;
+                    const nextRingNodeId = `node-r${ringIdx + 1}-v${i}`;
+
+                    if (Math.random() > edgeOmissionChance) {
+                        rawEdges.push({
+                            id: `h-spoke-out-r${ringIdx}-v${i}`,
+                            sourceNodeId: currentRingNodeId,
+                            targetNodeId: nextRingNodeId,
+                            speedLimit: 40,
+                            capacity: 30,
+                        });
+                    }
+
+                    if (Math.random() > edgeOmissionChance) {
+                        rawEdges.push({
+                            id: `v-spoke-in-r${ringIdx}-v${i}`,
+                            sourceNodeId: nextRingNodeId,
+                            targetNodeId: currentRingNodeId,
+                            speedLimit: 40,
+                            capacity: 30,
+                        });
+                    }
+                }
+            }
+
+            // --- C: PERIMETER GATEWAYS ---
+            const outerRingIdx = numRings - 1;
+            const entrySides = [
+                0,
+                Math.floor(sidesPerRing / 4),
+                Math.floor(sidesPerRing / 2),
+                Math.floor((3 * sidesPerRing) / 4)
+            ];
+
+            [...new Set(entrySides)].forEach((sideIdx) => {
+                const ringNodeId = `node-r${outerRingIdx}-v${sideIdx}`;
+                const baseNode = rawNodes.find(n => n.id === ringNodeId)!;
+
+                const dx = baseNode.x - centerX;
+                const dy = baseNode.y - centerY;
+                const length = Math.hypot(dx, dy);
+
+                const edgeX = Math.max(10, Math.min(width - 10, centerX + (dx / length) * (width * 0.48)));
+                const edgeY = Math.max(10, Math.min(height - 10, centerY + (dy / length) * (height * 0.48)));
+
+                const entryId = `entry-side-${sideIdx}`;
+                const exitId = `exit-side-${sideIdx}`;
+
+                rawNodes.push({ id: entryId, x: edgeX - 15, y: edgeY - 15, type: 'entry' });
+                rawNodes.push({ id: exitId, x: edgeX + 15, y: edgeY + 15, type: 'exit' });
+
+                rawEdges.push({
+                    id: `h-inbound-${sideIdx}`,
+                    sourceNodeId: entryId,
+                    targetNodeId: ringNodeId,
+                    speedLimit: 80,
+                    capacity: 60,
+                });
+
+                rawEdges.push({
+                    id: `v-outbound-${sideIdx}`,
+                    sourceNodeId: ringNodeId,
+                    targetNodeId: exitId,
+                    speedLimit: 80,
+                    capacity: 60,
+                });
+            });
+
+            // --- C.2: INTERNAL SPAWN POINTS (DRIVEWAYS/PARKING LOTS) ---
+            const innerIntersections = rawNodes.filter(n => n.type === 'intersection');
+
+            for (let i = 0; i < internalSpawnCount; i++) {
+                if (innerIntersections.length === 0) break;
+
+                const targetNode = innerIntersections[Math.floor(Math.random() * innerIntersections.length)];
+                const spawnId = `internal-spawn-${i}`;
+
+                const spawnX = targetNode.x + (Math.random() > 0.5 ? 25 : -25);
+                const spawnY = targetNode.y + (Math.random() > 0.5 ? 25 : -25);
+
+                rawNodes.push({
+                    id: spawnId,
+                    x: spawnX,
+                    y: spawnY,
+                    type: 'entry'
+                });
+
+                rawEdges.push({
+                    id: `edge-spawn-to-${targetNode.id}-${i}`,
+                    sourceNodeId: spawnId,
+                    targetNodeId: targetNode.id,
+                    speedLimit: 30,
+                    capacity: 20,
+                });
+            }
+
+            // --- D: COMPILE & VALIDATE ---
+            const compiled = compileGraph(rawNodes, rawEdges, TOPOLOGY_CONFIG);
+            validateTopology(compiled.nodes, compiled.edges);
+
+            // Fix: Call applyRealisticTrafficLights instead of the old function name, initialization phase = 0s
+            return {
+                nodes: compiled.nodes,
+                edges: applyRealisticTrafficLights(
+                    compiled.edges,
+                    0
+                ),
+                entryNodeIds: compiled.nodes.filter((n) => n.type === 'entry').map((n) => n.id),
+                exitNodeIds: compiled.nodes.filter((n) => n.type === 'exit').map((n) => n.id),
+                width,
+                height,
+            };
+
+        } catch (error) {
+            console.warn(`Generation attempt ${attempts} rejected: ${(error as Error).message}. Retrying...`);
+        }
+    }
+
+    throw new Error(`Failed to generate a valid topology after ${maxRetries} attempts.`);
+};
+
+// Backward compatibility
+export const createTownMap = createRandomTownMap;

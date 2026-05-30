@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import type { SimulationStore } from './types'
-import { applyTrafficLightsForGraph, createTownMap, TOPOLOGY_CONFIG } from './map'
+import { applyRealisticTrafficLights, createTownMap } from './map'
 
 // 1. Define global application constants
 const DEFAULT_SPAWN_RATE = 2
@@ -38,7 +38,7 @@ export const useSimulationStore = create<SimulationStore>()(
         setLightPhase: (phase) =>
             set((state) => ({
                 lightPhase: phase,
-                edges: applyTrafficLightsForGraph(state.edges, phase, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
+                edges: applyRealisticTrafficLights(state.edges, phase * 15),
             })),
 
         toggleLightPhase: () =>
@@ -46,7 +46,7 @@ export const useSimulationStore = create<SimulationStore>()(
                 const nextPhase: 0 | 1 = state.lightPhase === 0 ? 1 : 0
                 return {
                     lightPhase: nextPhase,
-                    edges: applyTrafficLightsForGraph(state.edges, nextPhase, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
+                    edges: applyRealisticTrafficLights(state.edges, nextPhase * 15),
                 }
             }),
 
@@ -56,7 +56,7 @@ export const useSimulationStore = create<SimulationStore>()(
                 simTime: 0,
                 lightPhase: 0,
                 resetToken: state.resetToken + 1,
-                edges: applyTrafficLightsForGraph(state.edges, 0, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
+                edges: applyRealisticTrafficLights(state.edges, 0),
             })),
     })),
 )
