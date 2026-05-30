@@ -107,7 +107,16 @@ export const SimulationCanvas = () => {
                  * Hue: 120 (Green) -> 0 (Red)
                  * Formula: $Hue = 120 \times (1 - Density)$
                  */
-                const hue = 120 * (1 - density)
+                var hue = 120
+                if (density >= 0.75){
+                    hue = 0
+                } else if (density >= 0.5) {
+                    hue = 60
+                } else if (density >= 0.25) {
+                    hue = 30
+                } else {
+                    hue = 120
+                }
                 ctx.strokeStyle = `hsl(${hue}, 80%, 45%)`
 
                 // Draw individual segment
