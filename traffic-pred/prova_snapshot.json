@@ -1,0 +1,483 @@
+{
+  "time": 1779707514392,
+  "cars": [
+    {
+      "id": "car-15",
+      "edgeId": "h-in-w_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-25",
+      "edgeId": "h-in-w_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-16",
+      "edgeId": "h-in-w_sub_0_of_2",
+      "distanceAlongEdge": 23.14
+    },
+    {
+      "id": "car-14",
+      "edgeId": "h-in-w_sub_0_of_2",
+      "distanceAlongEdge": 98.61
+    },
+    {
+      "id": "car-7",
+      "edgeId": "h-in-w_sub_1_of_2",
+      "distanceAlongEdge": 77.72
+    },
+    {
+      "id": "car-2",
+      "edgeId": "h-in-w_sub_1_of_2",
+      "distanceAlongEdge": 112.52
+    },
+    {
+      "id": "car-0",
+      "edgeId": "v-b-nw-cnw_sub_0_of_2",
+      "distanceAlongEdge": 70
+    },
+    {
+      "id": "car-23",
+      "edgeId": "h-in-e_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-24",
+      "edgeId": "h-in-e_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-26",
+      "edgeId": "h-in-e_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-18",
+      "edgeId": "h-in-e_sub_0_of_2",
+      "distanceAlongEdge": 7.2
+    },
+    {
+      "id": "car-12",
+      "edgeId": "h-in-e_sub_0_of_2",
+      "distanceAlongEdge": 62.06
+    },
+    {
+      "id": "car-10",
+      "edgeId": "h-in-e_sub_1_of_2",
+      "distanceAlongEdge": 35.3
+    },
+    {
+      "id": "car-3",
+      "edgeId": "h-in-e_sub_1_of_2",
+      "distanceAlongEdge": 107.83
+    },
+    {
+      "id": "car-1",
+      "edgeId": "h-in-e_sub_1_of_2",
+      "distanceAlongEdge": 112.27
+    },
+    {
+      "id": "car-20",
+      "edgeId": "v-in-n_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-27",
+      "edgeId": "v-in-n_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-22",
+      "edgeId": "v-in-n_sub_0_of_2",
+      "distanceAlongEdge": 3.7
+    },
+    {
+      "id": "car-17",
+      "edgeId": "v-in-n_sub_0_of_2",
+      "distanceAlongEdge": 50.66
+    },
+    {
+      "id": "car-11",
+      "edgeId": "v-in-n_sub_0_of_2",
+      "distanceAlongEdge": 139.73
+    },
+    {
+      "id": "car-4",
+      "edgeId": "v-in-n_sub_1_of_2",
+      "distanceAlongEdge": 108.32
+    },
+    {
+      "id": "car-6",
+      "edgeId": "v-in-s_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-8",
+      "edgeId": "v-in-s_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-19",
+      "edgeId": "v-in-s_sub_0_of_2",
+      "distanceAlongEdge": 0
+    },
+    {
+      "id": "car-21",
+      "edgeId": "v-in-s_sub_0_of_2",
+      "distanceAlongEdge": 2.37
+    },
+    {
+      "id": "car-13",
+      "edgeId": "v-in-s_sub_0_of_2",
+      "distanceAlongEdge": 45.16
+    },
+    {
+      "id": "car-9",
+      "edgeId": "v-in-s_sub_0_of_2",
+      "distanceAlongEdge": 138
+    },
+    {
+      "id": "car-5",
+      "edgeId": "v-in-s_sub_1_of_2",
+      "distanceAlongEdge": 79.97
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "v-in-n_sub_0_of_2",
+      "carCount": 5,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.2,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-in-n_sub_1_of_2",
+      "carCount": 1,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.04,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-in-s_sub_0_of_2",
+      "carCount": 6,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.24,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-in-s_sub_1_of_2",
+      "carCount": 1,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.04,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-in-w_sub_0_of_2",
+      "carCount": 4,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.16,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-in-w_sub_1_of_2",
+      "carCount": 2,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.08,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-in-e_sub_0_of_2",
+      "carCount": 5,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.2,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-in-e_sub_1_of_2",
+      "carCount": 3,
+      "edgeCapacity": 25,
+      "edgeDensity": 0.12,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-nw-ne_sub_0_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-nw-ne_sub_1_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-nw-ne_sub_2_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-nw-ne_sub_3_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-ne-se_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 35,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-ne-se_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 35,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-se-sw_sub_0_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-se-sw_sub_1_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-se-sw_sub_2_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-se-sw_sub_3_of_4",
+      "carCount": 0,
+      "edgeCapacity": 17.5,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-sw-nw_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 35,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-sw-nw_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 35,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-nw-cnw_sub_0_of_2",
+      "carCount": 1,
+      "edgeCapacity": 20,
+      "edgeDensity": 0.05,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-nw-cnw_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-ne-cne_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-ne-cne_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-sw-csw_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-b-sw-csw_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-se-cse_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-b-se-cse_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-c-nw-sw",
+      "carCount": 0,
+      "edgeCapacity": 10,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-c-sw-se",
+      "carCount": 0,
+      "edgeCapacity": 10,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-c-se-ne",
+      "carCount": 0,
+      "edgeCapacity": 10,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-c-ne-nw",
+      "carCount": 0,
+      "edgeCapacity": 10,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-c-nw-bnw_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-c-nw-bnw_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-c-ne-bne_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-c-ne-bne_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-c-sw-bsw_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-c-sw-bsw_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-c-se-bse_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-c-se-bse_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 20,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-out-n_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-out-n_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-out-s_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "v-out-s_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-out-w_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-out-w_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-out-e_sub_0_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    },
+    {
+      "edgeId": "h-out-e_sub_1_of_2",
+      "carCount": 0,
+      "edgeCapacity": 25,
+      "edgeDensity": 0,
+      "edgeColor": 0
+    }
+  ]
+}

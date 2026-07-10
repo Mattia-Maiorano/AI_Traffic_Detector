@@ -1,10 +1,3 @@
-"""
-Train a baseline model (RandomForest) on processed simulator snapshots.
-
-The script builds a tabular dataset where each row is the state of one edge at
-time t, using only features from that edge in the current snapshot. The target
-is the density of the same edge at time t + H (horizon).
-"""
 from pathlib import Path
 import json
 import argparse
@@ -18,7 +11,6 @@ from sklearn.metrics import accuracy_score, f1_score
 
 
 def extract_snapshot_objects(payload):
-    """Yield snapshot dictionaries from a parsed JSON payload."""
     if isinstance(payload, dict) and 'edges' in payload:
         yield payload
         return
@@ -30,21 +22,16 @@ def extract_snapshot_objects(payload):
 
 
 def density_to_edge_color(edge_density):
-    """Map a density value to the traffic state bucket."""
-    try:
-        density = float(edge_density)
-    except (TypeError, ValueError):
-        return None
 
-    if 0 <= density < 0.25:
+    if 0 <= edge_density < 0.25:
         return 0
-    if 0.25 <= density < 0.5:
+    if 0.25 <= edge_density < 0.5:
         return 1
-    if 0.5 <= density < 0.75:
+    if 0.5 <= edge_density < 0.75:
         return 2
-    if 0.75 <= density < 1:
+    if 0.75 <= edge_density < 1:
         return 3
-    if density >= 1:
+    if edge_density >= 1:
         return 3
     return None
 
