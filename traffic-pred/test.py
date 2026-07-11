@@ -1,39 +1,58 @@
-from locust import HttpUser, task, between
 import json
-import os
+from locust import HttpUser, task, between, LoadTestShape
 
 # =========================================================
-# 1. PRE-CARICAMENTO DEI DATI REALI (OTTIMIZZAZIONE PRESTAZIONI)
-# Leggiamo il file una volta sola in memoria RAM per evitare
-# di saturare il disco rigido durante lo stress test.
+# CONFIGURATION
 # =========================================================
 FILE_PATH = "prova_snapshot.json"
+LIGHT_PERCENT = 0.75  # 75%
+HEAVY_PERCENT = 0.25  # 25%
 
+# Load data
 try:
     with open(FILE_PATH, "r") as f:
-        PRELOADED_PAYLOAD = json.load(f)
-        print(f"[OK] File {FILE_PATH} caricato in memoria con successo!")
+        BASE_PAYLOAD = json.load(f)
 except FileNotFoundError:
-    print(f"[ERRORE] Il file {FILE_PATH} non è stato trovato!")
-    # Fallback fittizio per evitare il blocco totale del codice in caso di errore
-    PRELOADED_PAYLOAD = {"error": "file_not_found"}
+    BASE_PAYLOAD = {"error": "not_found"}
 
-# =========================================================
-# 2. DEFINIZIONE DELL'UTENTE SIMULATO
-# =========================================================
+LIGHT_PAYLOAD = {"edges": BASE_PAYLOAD.get("edges", []), "type": "light"}
+HEAVY_PAYLOAD = BASE_PAYLOAD
+
 class TrafficSimulatorUser(HttpUser):
-    # Simula un ritardo tra 1 e 3 secondi tra una richiesta e l'altra del singolo utente
     wait_time = between(1.0, 3.0)
 
-    @task
-    def send_traffic_data(self):
-        # Se c'è stato un errore nel caricamento, fermiamo il task
-        if "error" in PRELOADED_PAYLOAD:
-            return
+    # Use task(int) to define the ratio. Locust handles the math.
+    @task(int(LIGHT_PERCENT * 100))
+    def send_light_traffic(self):
+        # The 'name' parameter overrides the default POST /... path
+        self.client.post(
+            "/default/TrafficPredictor", 
+            json=LIGHT_PAYLOAD, 
+            name=f"Light Request ({int(LIGHT_PERCENT*100)}%)",
+            catch_response=True
+        )
 
-        # Invio della richiesta POST all'API Gateway usando i dati REALI
-        with self.client.post("", json=PRELOADED_PAYLOAD, catch_response=True) as response:
-            if response.status_code == 200:
-                response.success()
-            else:
-                response.failure(f"Errore API: {response.status_code} - {response.text}")
+    @task(int(HEAVY_PERCENT * 100))
+    def send_heavy_traffic(self):
+        self.client.post(
+            "/default/TrafficPredictor", 
+            json=HEAVY_PAYLOAD, 
+            name=f"Heavy Request ({int(HEAVY_PERCENT*100)}%)",
+            catch_response=True
+        )
+
+class AutomatedStepLoadShape(LoadTestShape):
+    # Stages defined for your presentation report
+    stages = [
+        {"duration": 90,  "users": 5,  "spawn_rate": 1},
+        {"duration": 300, "users": 30, "spawn_rate": 2},
+        {"duration": 600, "users": 30, "spawn_rate": 5},
+        {"duration": 720, "users": 0,  "spawn_rate": 3}
+    ]
+
+    def tick(self):
+        run_time = self.get_run_time()
+        for stage in self.stages:
+            if run_time < stage["duration"]:
+                return (stage["users"], stage["spawn_rate"])
+        return None
