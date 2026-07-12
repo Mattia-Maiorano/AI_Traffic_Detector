@@ -76,7 +76,7 @@ export const SimulationCanvas = () => {
             }
 
             // 1. Get current snapshot of the world
-            const { cars, edges: currentEdges, nodes: currentNodes } = useSimulationStore.getState()
+            const { cars, edges: currentEdges, nodes: currentNodes, predictionActive, predictedStatus } = useSimulationStore.getState()
 
             // 2. Map cars to their edges for fast density calculation
             const carCounts = new Map<string, number>()
@@ -108,12 +108,12 @@ export const SimulationCanvas = () => {
                  * Formula: $Hue = 120 \times (1 - Density)$
                  */
                 var hue = 120
-                if (density >= 0.75){
+                if (density >= 0.75) {
                     hue = 0
                 } else if (density >= 0.5) {
-                    hue = 60
-                } else if (density >= 0.25) {
                     hue = 30
+                } else if (density >= 0.25) {
+                    hue = 60
                 } else {
                     hue = 120
                 }
@@ -125,6 +125,46 @@ export const SimulationCanvas = () => {
                 ctx.lineTo(renderEdge.x2, renderEdge.y2)
                 ctx.stroke()
             })
+
+            // 3b. Draw AI prediction overlays (clogged/blocked zones)
+            if (predictionActive && predictedStatus) {
+                ctx.save()
+                ctx.lineWidth = 9.0 // Make predicted paths stand out clearly
+                ctx.lineCap = 'round'
+
+                currentEdges.forEach((edgeData) => {
+                    const predCode = predictedStatus[edgeData.id]
+                    if (predCode === 2 || predCode === 3) {
+                        const renderEdge = meta.get(edgeData.id)
+                        if (!renderEdge) return
+
+                        // Pulsing opacity based on timestamp
+                        const time = Date.now() / 220
+                        const pulse = 0.45 + 0.35 * Math.sin(time)
+
+                        ctx.strokeStyle = predCode === 3
+                            ? `rgba(239, 68, 68, ${pulse})` // Red glow for Blocked
+                            : `rgba(249, 115, 22, ${pulse})` // Orange glow for Congested
+
+                        ctx.beginPath()
+                        ctx.moveTo(renderEdge.x1, renderEdge.y1)
+                        ctx.lineTo(renderEdge.x2, renderEdge.y2)
+                        ctx.stroke()
+
+                        // Draw thin inner dashed core
+                        ctx.strokeStyle = '#ffffff'
+                        ctx.lineWidth = 1.6
+                        ctx.setLineDash([5, 5])
+                        ctx.beginPath()
+                        ctx.moveTo(renderEdge.x1, renderEdge.y1)
+                        ctx.lineTo(renderEdge.x2, renderEdge.y2)
+                        ctx.stroke()
+                        ctx.setLineDash([])
+                        ctx.lineWidth = 9.0
+                    }
+                })
+                ctx.restore()
+            }
 
             // 4. Draw Injected Nodes & Pedestrian Semaphores
             currentNodes.forEach((node) => {

@@ -229,6 +229,7 @@ export const useSimulationEngine = () => {
     const store = useSimulationStore
     const runningRef = useRef(store.getState().running)
     const spawnRateRef = useRef(store.getState().spawnRate)
+    const autoSpawnRateRef = useRef(store.getState().autoSpawnRate)
     const resetPendingRef = useRef(false)
     const carIdRef = useRef(0)
     const metaRef = useRef<EdgeMeta | null>(null)
@@ -246,6 +247,12 @@ export const useSimulationEngine = () => {
                 spawnRateRef.current = spawnRate
             },
         )
+        const unsubAutoSpawn = store.subscribe(
+            (state) => state.autoSpawnRate,
+            (autoSpawnRate: boolean) => {
+                autoSpawnRateRef.current = autoSpawnRate
+            },
+        )
         const unsubReset = store.subscribe(
             (state) => state.resetToken,
             () => {
@@ -256,6 +263,7 @@ export const useSimulationEngine = () => {
         return () => {
             unsubRunning()
             unsubSpawn()
+            unsubAutoSpawn()
             unsubReset()
         }
     }, [store])
@@ -265,6 +273,7 @@ export const useSimulationEngine = () => {
         let lastTime = performance.now()
         let spawnAccumulator = 0
         let lightTimer = 0
+        let stepCount = 0
 
         if (!metaRef.current) {
             const state = store.getState()
@@ -281,6 +290,7 @@ export const useSimulationEngine = () => {
                 spawnAccumulator = 0
                 lightTimer = 0
                 carIdRef.current = 0
+                stepCount = 0
                 lastTime = now
                 resetPendingRef.current = false
 
@@ -292,6 +302,7 @@ export const useSimulationEngine = () => {
             if (runningRef.current) {
                 const state = store.getState();
                 const meta = metaRef.current;
+                stepCount++;
                 if (!meta) {
                     frameId = requestAnimationFrame(tick);
                     return;
@@ -314,6 +325,34 @@ export const useSimulationEngine = () => {
                         metaRef.current.nodeById = new Map(freshNodes.map((node) => [node.id, node]))
                     }
 
+                    if (autoSpawnRateRef.current) {
+                        const counts = new Map<string, number>()
+                        state.cars.forEach((car) => {
+                            counts.set(car.edgeId, (counts.get(car.edgeId) ?? 0) + 1)
+                        })
+                        let congestedEdges = 0
+                        state.edges.forEach((edge) => {
+                            const count = counts.get(edge.id) ?? 0
+                            const density = count / edge.capacity
+                            if (density >= 0.75) {
+                                congestedEdges++
+                            }
+                        })
+                        const congestionPct = state.edges.length > 0 ? (congestedEdges / state.edges.length) * 100 : 0
+                        const targetCongestion = 30.0 + 20.0 * Math.sin(state.simTime * (2 * Math.PI / 450.0))
+                        
+                        const error = targetCongestion - congestionPct
+                        let nextSpawnRate = spawnRateRef.current
+                        if (error < 0) {
+                            nextSpawnRate += error * 0.4 + (Math.random() * 0.4 - 0.2)
+                        } else {
+                            nextSpawnRate += error * 0.08 + (Math.random() * 0.4 - 0.2)
+                        }
+                        
+                        nextSpawnRate = Math.min(80.0, Math.max(0.0, nextSpawnRate))
+                        state.setSpawnRate(nextSpawnRate)
+                    }
+
                     spawnAccumulator += dt * spawnRateRef.current
                     const spawnCount = Math.floor(spawnAccumulator)
                     let cars = state.cars
@@ -328,11 +367,126 @@ export const useSimulationEngine = () => {
                         cars = [...cars, ...spawned]
                     }
 
+                    const nextSimTime = state.simTime + dt
                     const updatedCars = stepCars(cars, dt, meta)
-                    store.setState({
-                        cars: updatedCars,
-                        simTime: state.simTime + dt,
-                    })
+
+                    // Prediction Verification Logic
+                    if (state.predictionActive && state.predictionTargetSimTime !== null && nextSimTime >= state.predictionTargetSimTime) {
+                        const predictedStatus = state.predictedStatus || {}
+                        const carCounts = new Map<string, number>()
+                        updatedCars.forEach(car => {
+                            carCounts.set(car.edgeId, (carCounts.get(car.edgeId) || 0) + 1)
+                        })
+
+                        const numClasses = 4
+                        const confusionMatrix: number[][] = Array.from({ length: numClasses }, () => Array(numClasses).fill(0))
+                        const actuals: number[] = []
+                        const preds: number[] = []
+
+                        state.edges.forEach(edge => {
+                            const pred = predictedStatus[edge.id]
+                            if (pred !== undefined) {
+                                const count = carCounts.get(edge.id) || 0
+                                const density = count / edge.capacity
+                                let actualCode = 0
+                                if (density >= 0.75) {
+                                    actualCode = 3
+                                } else if (density >= 0.5) {
+                                    actualCode = 2
+                                } else if (density >= 0.25) {
+                                    actualCode = 1
+                                } else {
+                                    actualCode = 0
+                                }
+
+                                actuals.push(actualCode)
+                                preds.push(pred)
+                                confusionMatrix[actualCode][pred] += 1
+                            }
+                        })
+
+                        let f1Sum = 0
+                        for (let c = 0; c < numClasses; c++) {
+                            let tp = 0
+                            let fp = 0
+                            let fn = 0
+                            for (let i = 0; i < actuals.length; i++) {
+                                const actual = actuals[i]
+                                const pred = preds[i]
+                                if (actual === c && pred === c) tp++
+                                if (actual !== c && pred === c) fp++
+                                if (actual === c && pred !== c) fn++
+                            }
+                            const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0
+                            const recall = (tp + fn) > 0 ? tp / (tp + fn) : 0
+                            const f1 = (precision + recall) > 0 ? (2 * precision * recall) / (precision + recall) : 0
+                            f1Sum += f1
+                        }
+                        const macroF1 = f1Sum / numClasses
+
+                        store.setState({
+                            predictionActive: false,
+                            predictionBalancedScore: Number((macroF1 * 100).toFixed(1)),
+                            predictionConfusionMatrix: confusionMatrix,
+                        })
+                    }
+
+                    if (stepCount % 20 === 0) {
+                        const carCounts = new Map<string, number>()
+                        updatedCars.forEach((car) => {
+                            carCounts.set(car.edgeId, (carCounts.get(car.edgeId) ?? 0) + 1)
+                        })
+
+                        const snap = {
+                            time: nextSimTime,
+                            edges: state.edges.map((edge) => {
+                                const count = carCounts.get(edge.id) ?? 0
+                                const density = count / edge.capacity
+
+                                const source = state.nodes.find(n => n.id === edge.sourceNodeId)
+                                const target = state.nodes.find(n => n.id === edge.targetNodeId)
+                                let flowDirection = 'E'
+                                if (source && target) {
+                                    const dx = target.x - source.x
+                                    const dy = target.y - source.y
+                                    if (Math.abs(dx) > Math.abs(dy)) {
+                                        flowDirection = dx > 0 ? 'E' : 'W'
+                                    } else {
+                                        flowDirection = dy > 0 ? 'S' : 'N'
+                                    }
+                                }
+
+                                const trafficLightState = edge.trafficLight === 'red' ? 0 : 1
+                                const phaseTimeRemaining = Number((5 - (nextSimTime % 5)).toFixed(2))
+                                const spawnWeight = source?.type === 'entry' ? 2 : 1
+
+                                return {
+                                    edgeId: edge.id,
+                                    count,
+                                    edgeCapacity: edge.capacity,
+                                    edgeDensity: Number(density.toFixed(3)),
+                                    flowDirection,
+                                    speedLimit: edge.speedLimit,
+                                    trafficLightState,
+                                    phaseTimeRemaining,
+                                    spawnWeight,
+                                    horizonTime: state.predictionHorizonSeconds
+                                }
+                            })
+                        }
+
+                        const currentSnaps = [...(store.getState().gnnSnapshots || []), snap].slice(-5)
+                        store.setState({
+                            cars: updatedCars,
+                            simTime: nextSimTime,
+                            gnnSnapshots: currentSnaps
+                        })
+                    } else {
+                        store.setState({
+                            cars: updatedCars,
+                            simTime: nextSimTime,
+                        })
+                    }
                 }
             }
 

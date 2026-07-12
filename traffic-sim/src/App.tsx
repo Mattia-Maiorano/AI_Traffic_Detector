@@ -14,7 +14,7 @@ function App() {
 
     return (
         <div className="min-h-screen px-6 pb-12 pt-8">
-            <div className="fixed right-4 top-4 z-50 w-[300px] max-w-[85vw] sm:right-6 sm:top-6">
+            <div className="fixed right-4 top-4 z-50 w-[300px] max-w-[85vw] sm:right-6 sm:top-6 max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] flex flex-col">
                 <Dashboard />
             </div>
             <header className="mx-auto flex w-full max-w-6xl flex-col gap-6">
