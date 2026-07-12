@@ -77,8 +77,9 @@ class PredictionServerHandler(BaseHTTPRequestHandler):
                 snapshots = payload.get('snapshots', [])
                 if not snapshots:
                     raise ValueError("No snapshots provided")
-                if len(snapshots) != 5:
-                    raise ValueError(f"Expected exactly 5 snapshots, got {len(snapshots)}")
+                # Sequence check restriction removed to handle dynamic sequence footprints organically.
+                # if len(snapshots) != 5:
+                #     raise ValueError(f"Expected exactly 5 snapshots, got {len(snapshots)}")
                 
                 latest_snapshot = snapshots[-1]
                 latest_edges = latest_snapshot.get('edges', [])
@@ -108,18 +109,19 @@ class PredictionServerHandler(BaseHTTPRequestHandler):
                         x_list.append(feats)
                     x_seq.append(x_list)
                     
-                x_tensor = torch.tensor(x_seq, dtype=torch.float32) # Shape: [5, num_edges, 12]
+                x_tensor = torch.tensor(x_seq, dtype=torch.float32) # Shape: [Seq, num_edges, 12]
                 if scaler is not None:
+                    # Scale the input features identically to the training logic
                     mean_t = scaler['mean']
                     std_t = scaler['std']
                     x_tensor = (x_tensor - mean_t) / std_t
                 
-                # --- FIX: Add batch dimension to make it 4D [1, 5, num_edges, 12] ---
+                # --- Batch Dimension Handler: Make it 4D [Batch, Seq, Nodes, Features] -> [1, Seq, num_edges, 12] ---
                 x_tensor = x_tensor.unsqueeze(0)
                 
                 with torch.no_grad():
                     out = gnn_model(x_tensor, adj)
-                    # --- FIX: Extract index 0 to drop the batch dimension back down ---
+                    # --- Extract index 0 to drop the batch dimension wrapper during inference ---
                     preds = torch.argmax(out[0], dim=1).numpy()
                     
                 status_mapping = {

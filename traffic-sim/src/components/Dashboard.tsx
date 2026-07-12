@@ -457,63 +457,6 @@ export const Dashboard = () => {
                                 <p className="font-semibold uppercase tracking-wider text-[10px] text-teal-600">Balanced Prediction Score (Macro F1)</p>
                                 <p className="mt-1 text-2xl font-black text-teal-700">{predictionBalancedScore}%</p>
                             </div>
-
-                            {predictionConfusionMatrix && (
-                                <div className="mt-2 pt-2 border-t border-teal-100/50">
-                                    <p className="font-semibold uppercase tracking-wider text-[9px] text-teal-600 mb-2">Confusion Matrix (Actual vs Pred)</p>
-                                    <div className="grid grid-cols-5 gap-1 text-[9px] font-mono select-none">
-                                        {/* Header Row */}
-                                        <div className="flex items-center justify-center text-slate-400 font-bold">A \ P</div>
-                                        <div className="text-center font-bold text-slate-600 animate-pulse" title="Libero">Lib</div>
-                                        <div className="text-center font-bold text-slate-600 animate-pulse" title="Rallentato">Ral</div>
-                                        <div className="text-center font-bold text-slate-600 animate-pulse" title="Congestionato">Con</div>
-                                        <div className="text-center font-bold text-slate-600 animate-pulse" title="Bloccato">Blo</div>
-
-                                        {/* Matrix Rows */}
-                                        {predictionConfusionMatrix.map((row, actualIdx) => {
-                                            const classLabels = ['Lib', 'Ral', 'Con', 'Blo']
-                                            const classFullNames = ['Libero', 'Rallentato', 'Congestionato', 'Bloccato']
-                                            return (
-                                                <Fragment key={actualIdx}>
-                                                    {/* Row header (Actual class) */}
-                                                    <div className="flex items-center justify-end pr-1 font-bold text-slate-600" title={classFullNames[actualIdx]}>
-                                                        {classLabels[actualIdx]}
-                                                    </div>
-                                                    {/* Row values (Predicted classes) */}
-                                                    {row.map((val, predIdx) => {
-                                                        // Color scaling based on value
-                                                        let bgClass = 'bg-slate-50/50 text-slate-400 border border-slate-100/40'
-                                                        if (val > 0) {
-                                                            if (actualIdx === predIdx) {
-                                                                // Correct predictions (diagonal) - green/emerald shades
-                                                                if (val < 5) bgClass = 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-200'
-                                                                else if (val < 15) bgClass = 'bg-emerald-300 text-emerald-900 font-bold border border-emerald-400'
-                                                                else bgClass = 'bg-emerald-500 text-white font-extrabold border border-emerald-600'
-                                                            } else {
-                                                                // Incorrect predictions (off-diagonal) - warm orange/rose shades
-                                                                if (val < 5) bgClass = 'bg-rose-100 text-rose-800 border border-rose-200'
-                                                                else bgClass = 'bg-rose-300 text-rose-900 font-bold border border-rose-400'
-                                                            }
-                                                        }
-                                                        return (
-                                                            <div
-                                                                key={predIdx}
-                                                                className={`h-6 flex items-center justify-center rounded transition-all hover:scale-105 duration-100 ${bgClass}`}
-                                                                title={`Actual: ${classFullNames[actualIdx]}, Predicted: ${classFullNames[predIdx]} - Count: ${val}`}
-                                                            >
-                                                                {val}
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </Fragment>
-                                            )
-                                        })}
-                                    </div>
-                                    <div className="mt-2 text-[9px] text-slate-400 italic">
-                                        Rows: Actual state | Columns: Predicted state
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
 
