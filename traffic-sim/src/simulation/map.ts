@@ -1,7 +1,7 @@
 import type { Edge, Node } from './types'
 
 export const TOPOLOGY_CONFIG = {
-    MAX_EDGE_LENGTH: 150, // Compile-time maximum segment length in pixels
+    MAX_EDGE_LENGTH: 15, // Compile-time maximum segment length in pixels
     INTERMEDIATE_NODE_TYPE: 'pass-through' as 'pass-through' | 'semaphore', // 'pass-through' or 'semaphore'
 }
 
