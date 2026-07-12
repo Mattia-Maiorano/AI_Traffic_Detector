@@ -28,10 +28,21 @@ export const useSimulationStore = create<SimulationStore>()(
         lightPhase: 0,
         simTime: 0,
         resetToken: 0,
+        autoSpawnRate: false,
+
+        // Prediction State
+        predictionActive: false,
+        predictedStatus: null,
+        predictionTargetSimTime: null,
+        predictionHorizonSeconds: 5,
+        predictionBalancedScore: null,
+        predictionConfusionMatrix: null,
+        gnnSnapshots: [],
 
         // Actions
         setRunning: (running) => set({ running }),
         setSpawnRate: (spawnRate) => set({ spawnRate }),
+        setAutoSpawnRate: (autoSpawnRate) => set({ autoSpawnRate }),
         setCars: (cars) => set({ cars }),
         setSimTime: (simTime) => set({ simTime }),
 
@@ -57,7 +68,44 @@ export const useSimulationStore = create<SimulationStore>()(
                 lightPhase: 0,
                 resetToken: state.resetToken + 1,
                 edges: applyTrafficLightsForGraph(state.edges, 0, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
+                predictionActive: false,
+                predictedStatus: null,
+                predictionTargetSimTime: null,
+                predictionBalancedScore: null,
+                predictionConfusionMatrix: null,
+                gnnSnapshots: [],
             })),
+
+        setPrediction: (status, targetTime) =>
+            set({
+                predictionActive: true,
+                predictedStatus: status,
+                predictionTargetSimTime: targetTime,
+                predictionBalancedScore: null,
+                predictionConfusionMatrix: null,
+            }),
+
+        clearPrediction: () =>
+            set({
+                predictionActive: false,
+                predictedStatus: null,
+                predictionTargetSimTime: null,
+            }),
+
+        setPredictionBalancedScore: (score) =>
+            set({
+                predictionBalancedScore: score,
+            }),
+
+        setPredictionConfusionMatrix: (matrix) =>
+            set({
+                predictionConfusionMatrix: matrix,
+            }),
+
+        setPredictionHorizonSeconds: (horizon) =>
+            set({
+                predictionHorizonSeconds: horizon,
+            }),
     })),
 )
 

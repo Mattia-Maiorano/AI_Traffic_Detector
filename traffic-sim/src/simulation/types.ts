@@ -43,11 +43,27 @@ export type SimulationStore = {
     lightPhase: 0 | 1
     simTime: number
     resetToken: number
+    autoSpawnRate: boolean
+    // Prediction State
+    predictionActive: boolean
+    predictedStatus: Record<string, number> | null
+    predictionTargetSimTime: number | null
+    predictionHorizonSeconds: number
+    predictionBalancedScore: number | null
+    predictionConfusionMatrix: number[][] | null
+    gnnSnapshots: any[]
+
     setRunning: (running: boolean) => void
     setSpawnRate: (spawnRate: number) => void
+    setAutoSpawnRate: (autoSpawnRate: boolean) => void
     setCars: (cars: Car[]) => void
     setSimTime: (time: number) => void
     setLightPhase: (phase: 0 | 1) => void
     toggleLightPhase: () => void
     resetSimulation: () => void
+    setPrediction: (status: Record<string, number>, targetTime: number) => void
+    clearPrediction: () => void
+    setPredictionBalancedScore: (score: number | null) => void
+    setPredictionConfusionMatrix: (matrix: number[][] | null) => void
+    setPredictionHorizonSeconds: (horizon: number) => void
 }

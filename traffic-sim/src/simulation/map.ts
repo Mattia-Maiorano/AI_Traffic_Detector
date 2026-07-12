@@ -1,204 +1,199 @@
 import type { Edge, Node } from './types'
 
 export const TOPOLOGY_CONFIG = {
-    MAX_EDGE_LENGTH: 15, // Compile-time maximum segment length in pixels
-    INTERMEDIATE_NODE_TYPE: 'pass-through' as 'pass-through' | 'semaphore', // 'pass-through' or 'semaphore'
+    // -------------------------------------------------------------
+    // CHANGE THIS NUMBER TO SCALE GRID COMPLEXITY
+    // 2 = 2x2 intersections, 4 = 4x4 grid (Manhattan style), etc.
+    // -------------------------------------------------------------
+    GRID_SIZE: 10,
+
+    MAX_EDGE_LENGTH: 150,
+    INTERMEDIATE_NODE_TYPE: 'pass-through' as 'pass-through' | 'semaphore',
 }
 
-export const RAW_TOWN_NODES: Node[] = [
-    // Perimeter Spoke Nodes
-    { id: 'entry-n', x: 450, y: 20, type: 'entry' },
-    { id: 'exit-n', x: 480, y: 20, type: 'exit' },
-    { id: 'entry-s', x: 450, y: 580, type: 'entry' },
-    { id: 'exit-s', x: 420, y: 580, type: 'exit' },
-    { id: 'entry-w', x: 20, y: 300, type: 'entry' },
-    { id: 'exit-w', x: 20, y: 330, type: 'exit' },
-    { id: 'entry-e', x: 880, y: 300, type: 'entry' },
-    { id: 'exit-e', x: 880, y: 270, type: 'exit' },
+/**
+ * Procedurally generates a Manhattan-style grid with alternating one-way streets.
+ */
+export const generateManhattanMap = (gridSize: number) => {
+    const nodes: Node[] = []
+    const edges: Edge[] = []
 
-    // Bypass Ring Nodes (Outer Loop)
-    { id: 'b-nw', x: 200, y: 150, type: 'intersection' },
-    { id: 'b-ne', x: 700, y: 150, type: 'intersection' },
-    { id: 'b-sw', x: 200, y: 450, type: 'intersection' },
-    { id: 'b-se', x: 700, y: 450, type: 'intersection' },
+    const spacing = 120 // Distance between intersections
+    const padding = 100 // Border padding for entry/exit points
 
-    // Central Core Nodes (Inner Loop)
-    { id: 'c-nw', x: 400, y: 250, type: 'intersection' },
-    { id: 'c-ne', x: 500, y: 250, type: 'intersection' },
-    { id: 'c-sw', x: 400, y: 350, type: 'intersection' },
-    { id: 'c-se', x: 500, y: 350, type: 'intersection' },
-]
+    // 1. Generate Grid Intersections
+    for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+            nodes.push({
+                id: `node-${r}-${c}`,
+                x: padding + c * spacing,
+                y: padding + r * spacing,
+                type: 'intersection'
+            })
+        }
+    }
 
-export const RAW_TOWN_EDGES: Edge[] = [
-    // --- IN-ROUTES (Radial Inward) ---
-    { id: 'v-in-n', sourceNodeId: 'entry-n', targetNodeId: 'b-ne', speedLimit: 80, capacity: 50 },
-    { id: 'v-in-s', sourceNodeId: 'entry-s', targetNodeId: 'b-sw', speedLimit: 80, capacity: 50 },
-    { id: 'h-in-w', sourceNodeId: 'entry-w', targetNodeId: 'b-nw', speedLimit: 80, capacity: 50 },
-    { id: 'h-in-e', sourceNodeId: 'entry-e', targetNodeId: 'b-se', speedLimit: 80, capacity: 50 },
+    // 2. Generate Perimeter Entry/Exit Nodes
+    for (let i = 0; i < gridSize; i++) {
+        const firstPos = padding
+        const lastPos = padding + (gridSize - 1) * spacing
 
-    // --- BYPASS RING (Clockwise) ---
-    { id: 'h-b-nw-ne', sourceNodeId: 'b-nw', targetNodeId: 'b-ne', speedLimit: 60, capacity: 70 },
-    { id: 'v-b-ne-se', sourceNodeId: 'b-ne', targetNodeId: 'b-se', speedLimit: 60, capacity: 70 },
-    { id: 'h-b-se-sw', sourceNodeId: 'b-se', targetNodeId: 'b-sw', speedLimit: 60, capacity: 70 },
-    { id: 'v-b-sw-nw', sourceNodeId: 'b-sw', targetNodeId: 'b-nw', speedLimit: 60, capacity: 70 },
+        // Vertical boundary entry/exits (North & South)
+        if (i % 2 === 0) {
+            nodes.push({ id: `entry-n-${i}`, x: padding + i * spacing, y: firstPos - 60, type: 'entry' })
+            nodes.push({ id: `exit-s-${i}`, x: padding + i * spacing, y: lastPos + 60, type: 'exit' })
+        } else {
+            nodes.push({ id: `entry-s-${i}`, x: padding + i * spacing, y: lastPos + 60, type: 'entry' })
+            nodes.push({ id: `exit-n-${i}`, x: padding + i * spacing, y: firstPos - 60, type: 'exit' })
+        }
 
-    // --- INWARD CORE SPOKES ---
-    { id: 'v-b-nw-cnw', sourceNodeId: 'b-nw', targetNodeId: 'c-nw', speedLimit: 40, capacity: 40 },
-    { id: 'h-b-ne-cne', sourceNodeId: 'b-ne', targetNodeId: 'c-ne', speedLimit: 40, capacity: 40 },
-    { id: 'h-b-sw-csw', sourceNodeId: 'b-sw', targetNodeId: 'c-sw', speedLimit: 40, capacity: 40 },
-    { id: 'v-b-se-cse', sourceNodeId: 'b-se', targetNodeId: 'c-se', speedLimit: 40, capacity: 40 },
+        // Horizontal boundary entry/exits (West & East)
+        if (i % 2 === 0) {
+            nodes.push({ id: `entry-w-${i}`, x: firstPos - 60, y: padding + i * spacing, type: 'entry' })
+            nodes.push({ id: `exit-e-${i}`, x: lastPos + 60, y: padding + i * spacing, type: 'exit' })
+        } else {
+            nodes.push({ id: `entry-e-${i}`, x: lastPos + 60, y: padding + i * spacing, type: 'entry' })
+            nodes.push({ id: `exit-w-${i}`, x: firstPos - 60, y: padding + i * spacing, type: 'exit' })
+        }
+    }
 
-    // --- CENTRAL CORE (Counter-Clockwise Loop) ---
-    { id: 'v-c-nw-sw', sourceNodeId: 'c-nw', targetNodeId: 'c-sw', speedLimit: 30, capacity: 10 },
-    { id: 'h-c-sw-se', sourceNodeId: 'c-sw', targetNodeId: 'c-se', speedLimit: 30, capacity: 10 },
-    { id: 'v-c-se-ne', sourceNodeId: 'c-se', targetNodeId: 'c-ne', speedLimit: 30, capacity: 10 },
-    { id: 'h-c-ne-nw', sourceNodeId: 'c-ne', targetNodeId: 'c-nw', speedLimit: 30, capacity: 10 },
+    // 3. Connect Internal One-Way Grid Roads & Boundary Entry/Exits
+    for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
 
-    // --- OUTWARD CORE SPOKES (The Escape Hatches) ---
-    { id: 'h-c-nw-bnw', sourceNodeId: 'c-nw', targetNodeId: 'b-nw', speedLimit: 40, capacity: 40 },
-    { id: 'v-c-ne-bne', sourceNodeId: 'c-ne', targetNodeId: 'b-ne', speedLimit: 40, capacity: 40 },
-    { id: 'v-c-sw-bsw', sourceNodeId: 'c-sw', targetNodeId: 'b-sw', speedLimit: 40, capacity: 40 },
-    { id: 'h-c-se-bse', sourceNodeId: 'c-se', targetNodeId: 'b-se', speedLimit: 40, capacity: 40 },
+            // --- HORIZONTAL EDGES (Avenues) ---
+            if (c < gridSize - 1) {
+                const eastBound = r % 2 === 0
+                const sourceCol = eastBound ? c : c + 1
+                const targetCol = eastBound ? c + 1 : c
 
-    // --- OUT-ROUTES (Radial Outward) ---
-    { id: 'v-out-n', sourceNodeId: 'b-ne', targetNodeId: 'exit-n', speedLimit: 70, capacity: 50 },
-    { id: 'v-out-s', sourceNodeId: 'b-sw', targetNodeId: 'exit-s', speedLimit: 70, capacity: 50 },
-    { id: 'h-out-w', sourceNodeId: 'b-nw', targetNodeId: 'exit-w', speedLimit: 70, capacity: 50 },
-    { id: 'h-out-e', sourceNodeId: 'b-se', targetNodeId: 'exit-e', speedLimit: 70, capacity: 50 },
-]
+                edges.push({
+                    id: `h-street-${r}-${c}`,
+                    sourceNodeId: `node-${r}-${sourceCol}`,
+                    targetNodeId: `node-${r}-${targetCol}`,
+                    speedLimit: 50,
+                    capacity: 40
+                })
+            }
 
-export const compileGraph = (
-    rawNodes: Node[],
-    rawEdges: Edge[],
-    config: typeof TOPOLOGY_CONFIG
-): { nodes: Node[]; edges: Edge[] } => {
+            // --- VERTICAL EDGES (Streets) ---
+            if (r < gridSize - 1) {
+                const southBound = c % 2 === 0
+                const sourceRow = southBound ? r : r + 1
+                const targetRow = southBound ? r + 1 : r
+
+                edges.push({
+                    id: `v-avenue-${r}-${c}`,
+                    sourceNodeId: `node-${sourceRow}-${c}`,
+                    targetNodeId: `node-${targetRow}-${c}`,
+                    speedLimit: 50,
+                    capacity: 40
+                })
+            }
+        }
+    }
+
+    // 4. Connect Boundary Entries and Exits to the Outer Grid Elements
+    for (let i = 0; i < gridSize; i++) {
+        if (i % 2 === 0) {
+            // North to South flows
+            edges.push({ id: `v-in-n-${i}`, sourceNodeId: `entry-n-${i}`, targetNodeId: `node-0-${i}`, speedLimit: 60, capacity: 50 })
+            edges.push({ id: `v-out-s-${i}`, sourceNodeId: `node-${gridSize - 1}-${i}`, targetNodeId: `exit-s-${i}`, speedLimit: 60, capacity: 50 })
+            // West to East flows
+            edges.push({ id: `h-in-w-${i}`, sourceNodeId: `entry-w-${i}`, targetNodeId: `node-${i}-0`, speedLimit: 60, capacity: 50 })
+            edges.push({ id: `h-out-e-${i}`, sourceNodeId: `node-${i}-${gridSize - 1}`, targetNodeId: `exit-e-${i}`, speedLimit: 60, capacity: 50 })
+        } else {
+            // South to North flows
+            edges.push({ id: `v-in-s-${i}`, sourceNodeId: `entry-s-${i}`, targetNodeId: `node-${gridSize - 1}-${i}`, speedLimit: 60, capacity: 50 })
+            edges.push({ id: `v-out-n-${i}`, sourceNodeId: `node-0-${i}`, targetNodeId: `exit-n-${i}`, speedLimit: 60, capacity: 50 })
+            // East to West flows
+            edges.push({ id: `h-in-e-${i}`, sourceNodeId: `entry-e-${i}`, targetNodeId: `node-${i}-${gridSize - 1}`, speedLimit: 60, capacity: 50 })
+            edges.push({ id: `h-out-w-${i}`, sourceNodeId: `node-${i}-0`, targetNodeId: `exit-w-${i}`, speedLimit: 60, capacity: 50 })
+        }
+    }
+
+    return { nodes, edges }
+}
+
+// ... Keep your existing compileGraph and applyTrafficLightsForGraph functions exactly as they are ...
+export const compileGraph = (rawNodes: Node[], rawEdges: Edge[], config: typeof TOPOLOGY_CONFIG): { nodes: Node[]; edges: Edge[] } => {
     const { MAX_EDGE_LENGTH } = config
     const nodeById = new Map(rawNodes.map((n) => [n.id, n]))
-
     const compiledNodes: Node[] = [...rawNodes]
     const compiledEdges: Edge[] = []
 
     rawEdges.forEach((parentEdge) => {
         const source = nodeById.get(parentEdge.sourceNodeId)
         const target = nodeById.get(parentEdge.targetNodeId)
-
-        if (!source || !target) {
-            compiledEdges.push(parentEdge)
-            return
-        }
+        if (!source || !target) { compiledEdges.push(parentEdge); return }
 
         const dx = target.x - source.x
         const dy = target.y - source.y
         const L = Math.hypot(dx, dy)
-
         const N = Math.ceil(L / MAX_EDGE_LENGTH)
 
         if (N <= 1) {
-            compiledEdges.push({
-                ...parentEdge,
-                isSubedge: false,
-            })
+            compiledEdges.push({ ...parentEdge, isSubedge: false })
             return
         }
 
-        // Insert N-1 intermediate nodes
         const intermediateNodeIds: string[] = []
         for (let i = 1; i < N; i++) {
             const nodeId = `${parentEdge.id}_node_${i}`
             const t = i / N
-            const x = source.x + t * dx
-            const y = source.y + t * dy
-
-            const newNode: Node = {
-                id: nodeId,
-                x,
-                y,
-                type: 'intersection',
-            }
+            const newNode: Node = { id: nodeId, x: source.x + t * dx, y: source.y + t * dy, type: 'intersection' }
             compiledNodes.push(newNode)
             intermediateNodeIds.push(nodeId)
         }
 
-        // Create N sub-edges
         const subCapacity = parentEdge.capacity / N
-
         for (let i = 0; i < N; i++) {
             const subEdgeId = `${parentEdge.id}_sub_${i}_of_${N}`
             const edgeSourceId = i === 0 ? parentEdge.sourceNodeId : intermediateNodeIds[i - 1]
             const edgeTargetId = i === N - 1 ? parentEdge.targetNodeId : intermediateNodeIds[i]
 
-            const subEdge: Edge = {
-                id: subEdgeId,
-                sourceNodeId: edgeSourceId,
-                targetNodeId: edgeTargetId,
-                speedLimit: parentEdge.speedLimit,
-                capacity: subCapacity,
-                parentEdgeId: parentEdge.id,
-                subEdgeIndex: i,
-                totalSubEdges: N,
-                isSubedge: true,
-            }
-            compiledEdges.push(subEdge)
+            compiledEdges.push({
+                id: subEdgeId, sourceNodeId: edgeSourceId, targetNodeId: edgeTargetId,
+                speedLimit: parentEdge.speedLimit, capacity: subCapacity, parentEdgeId: parentEdge.id,
+                subEdgeIndex: i, totalSubEdges: N, isSubedge: true
+            })
         }
     })
-
-    return {
-        nodes: compiledNodes,
-        edges: compiledEdges,
-    }
+    return { nodes: compiledNodes, edges: compiledEdges }
 }
 
-export const applyTrafficLightsForGraph = (
-    edges: Edge[],
-    phase: 0 | 1,
-    intermediateNodeType: 'pass-through' | 'semaphore'
-): Edge[] => {
+export const applyTrafficLightsForGraph = (edges: Edge[], phase: 0 | 1, intermediateNodeType: 'pass-through' | 'semaphore'): Edge[] => {
     return edges.map((edge) => {
-        // If it's an intermediate subedge (i.e., not the final one in the split chain)
-        if (
-            edge.isSubedge &&
-            edge.subEdgeIndex !== undefined &&
-            edge.totalSubEdges !== undefined &&
-            edge.subEdgeIndex < edge.totalSubEdges - 1
-        ) {
-            if (intermediateNodeType === 'pass-through') {
-                return {
-                    ...edge,
-                    trafficLight: undefined, // Free flow
-                }
-            } else {
-                // If it is 'semaphore', it acts as a pedestrian stop.
-                // They do not need directions (alternating orientation parity). They all toggle together as inline stops.
-                return {
-                    ...edge,
-                    trafficLight: phase === 0 ? 'red' : 'green',
-                }
-            }
+        if (edge.isSubedge && edge.subEdgeIndex !== undefined && edge.totalSubEdges !== undefined && edge.subEdgeIndex < edge.totalSubEdges - 1) {
+            return { ...edge, trafficLight: intermediateNodeType === 'pass-through' ? undefined : (phase === 0 ? 'red' : 'green') }
         }
-
-        // For undivided edges or the last sub-edge in a split chain (which leads to the real intersection)
         const isHorizontal = (edge.parentEdgeId ?? edge.id).startsWith('h-')
-        const edgeParity = isHorizontal ? 0 : 1
-        return {
-            ...edge,
-            trafficLight: edgeParity === phase ? 'green' : 'red',
-        }
+        return { ...edge, trafficLight: (isHorizontal ? 0 : 1) === phase ? 'green' : 'red' }
     })
 }
 
-export const createTownMap = (width: number, height: number) => {
-    const compiled = compileGraph(RAW_TOWN_NODES, RAW_TOWN_EDGES, TOPOLOGY_CONFIG)
+export const createTownMap = (_width: number, _height: number) => {
+    const { nodes, edges } = generateManhattanMap(TOPOLOGY_CONFIG.GRID_SIZE);
+    const compiled = compileGraph(nodes, edges, TOPOLOGY_CONFIG);
+
+    // Gather the standard perimeter entry nodes
+    const perimeterEntries = compiled.nodes.filter((n) => n.type === 'entry').map((n) => n.id);
+
+    // Gather all internal crossroads/intersections to use as random internal spawn points
+    const internalCrossroads = compiled.nodes
+        .filter((n) => n.type === 'intersection' && !n.id.includes('_node_')) // Exclude intermediate sub-edge nodes
+        .map((n) => n.id);
 
     return {
         nodes: compiled.nodes,
-        edges: applyTrafficLightsForGraph(
-            compiled.edges,
-            0,
-            TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE
-        ),
-        entryNodeIds: compiled.nodes.filter((n) => n.type === 'entry').map((n) => n.id),
+        edges: applyTrafficLightsForGraph(compiled.edges, 0, TOPOLOGY_CONFIG.INTERMEDIATE_NODE_TYPE),
+
+        // Combine both perimeter and internal crossroads so your spawning engine can use them
+        entryNodeIds: [...perimeterEntries, ...internalCrossroads],
         exitNodeIds: compiled.nodes.filter((n) => n.type === 'exit').map((n) => n.id),
-        width,
-        height,
-    }
-}
+
+        width: padding * 2 + (TOPOLOGY_CONFIG.GRID_SIZE - 1) * 120,
+        height: padding * 2 + (TOPOLOGY_CONFIG.GRID_SIZE - 1) * 120,
+    };
+};
+const padding = 100 // Local alias for map calculation boundary matching
