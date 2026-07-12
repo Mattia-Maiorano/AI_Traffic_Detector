@@ -237,13 +237,11 @@ def step_cars(cars, dt, node_by_id, edge_by_id, edge_len_by_id, outgoing):
 def simulate():
     parser = argparse.ArgumentParser(description="Markov-Chain driven Traffic Simulation purely in Python CLI")
     parser.add_argument('--grid-size', type=int, default=8)
-    parser.add_argument('--spawn-min', type=float, default=0.0)  
-    parser.add_argument('--spawn-max', type=float, default=80.0) 
+    # --- FIXED: Adjusted fixed spawn rate parameter baseline ---
+    parser.add_argument('--spawn-rate', type=float, default=24.0) 
     parser.add_argument('--steps', type=int, default=40000)
     parser.add_argument('--dt', type=float, default=0.05)
     parser.add_argument('--output-dir', type=str, default='processed_test/gnn_data')
-    parser.add_argument('--horizon-min', type=float, default=5.0)
-    parser.add_argument('--horizon-max', type=float, default=30.0)
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -272,7 +270,6 @@ def simulate():
     light_phase = 0
     car_counter = 0
     spawn_accumulator = 0.0
-    current_spawn_rate = 20.0
 
     speeds = []
     congestion_stats = []
@@ -283,21 +280,14 @@ def simulate():
     congestion_pct = 0.0
 
     for step in range(args.steps):
-        # Console Progress Output (inline rewrite using carriage return)
         if step % 1000 == 0 or step == args.steps - 1:
             progress = (step + 1) / args.steps * 100
             sys.stdout.write(f"\rSimulation Progress: {progress:6.2f}% | Current Active Cars: {len(cars):4d}")
             sys.stdout.flush()
 
-        target_congestion = 30.0 + 20.0 * math.sin(sim_time * (2 * math.pi / 450.0))
-        
-        error = target_congestion - congestion_pct
-        if error < 0:
-            current_spawn_rate += error * 0.4 + random.uniform(-0.2, 0.2)
-        else:
-            current_spawn_rate += error * 0.08 + random.uniform(-0.2, 0.2)
-            
-        current_spawn_rate = min(args.spawn_max, max(args.spawn_min, current_spawn_rate))
+        # --- STEADY FLOW UPDATE ---
+        # The wave dynamics are removed entirely. The map receives a perfectly uniform inflow of traffic.
+        current_spawn_rate = args.spawn_rate
 
         sim_time += args.dt
         light_timer += args.dt
@@ -338,8 +328,10 @@ def simulate():
         congestion_pct = (congested_edges / len(edges)) * 100
         congestion_stats.append(congestion_pct)
 
+        # --- FIX 2: Fixed Prediction Horizon Window ---
+        # Snapshots are logged at a fixed target prediction interval (15.0s) rather than a randomized one.
         if step % 20 == 0 and congestion_pct >= 10.0:
-            horizon = round(random.uniform(args.horizon_min, args.horizon_max), 1)
+            horizon = 15.0
             payload_edges = []
             for edge in edges:
                 count = counts[edge.id]
@@ -388,7 +380,6 @@ def simulate():
             with open(filename, 'w') as f:
                 json.dump(snapshot, f, indent=2)
 
-    # Clean line break after carriage-returned progress logs finish
     print("\n")
 
     avg_speed = sum(speeds) / len(speeds) if speeds else 0.0

@@ -326,31 +326,7 @@ export const useSimulationEngine = () => {
                     }
 
                     if (autoSpawnRateRef.current) {
-                        const counts = new Map<string, number>()
-                        state.cars.forEach((car) => {
-                            counts.set(car.edgeId, (counts.get(car.edgeId) ?? 0) + 1)
-                        })
-                        let congestedEdges = 0
-                        state.edges.forEach((edge) => {
-                            const count = counts.get(edge.id) ?? 0
-                            const density = count / edge.capacity
-                            if (density >= 0.75) {
-                                congestedEdges++
-                            }
-                        })
-                        const congestionPct = state.edges.length > 0 ? (congestedEdges / state.edges.length) * 100 : 0
-                        const targetCongestion = 30.0 + 20.0 * Math.sin(state.simTime * (2 * Math.PI / 450.0))
-                        
-                        const error = targetCongestion - congestionPct
-                        let nextSpawnRate = spawnRateRef.current
-                        if (error < 0) {
-                            nextSpawnRate += error * 0.4 + (Math.random() * 0.4 - 0.2)
-                        } else {
-                            nextSpawnRate += error * 0.08 + (Math.random() * 0.4 - 0.2)
-                        }
-                        
-                        nextSpawnRate = Math.min(80.0, Math.max(0.0, nextSpawnRate))
-                        state.setSpawnRate(nextSpawnRate)
+                        state.setSpawnRate(24.0)
                     }
 
                     spawnAccumulator += dt * spawnRateRef.current

@@ -17,8 +17,8 @@ try:
     gnn_model = None
     scaler = None
     if os.path.exists(MODEL_GNN_PATH):
-        # ALIGNED: 12 input features, 64 hidden dim (matching train_gnn), 4 classes
-        gnn_model = TrafficGNN(in_features=12, hidden_dim=64, num_classes=4)
+        # ALIGNED: 12 input features, 256 hidden dim (matching train_gnn), 4 classes
+        gnn_model = TrafficGNN(in_features=12, hidden_dim=256, num_classes=4)
         gnn_model.load_state_dict(torch.load(MODEL_GNN_PATH, map_location=torch.device('cpu'), weights_only=True))
         gnn_model.eval()
         print("Loaded local GNN model successfully!")

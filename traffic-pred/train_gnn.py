@@ -14,74 +14,73 @@ class GCNConv(nn.Module):
         self.linear = nn.Linear(in_features, out_features)
 
     def forward(self, x, adj):
-        # x shape: [Batch, Seq, Nodes, Features] or [Batch, Nodes, Features]
-        # adj shape: [Batch, Nodes, Nodes]
         if x.dim() == 4:
-            # Batch matrix multiplication across sequence dimension
             out = torch.matmul(adj.unsqueeze(1), x)
             return self.linear(out)
         out = torch.matmul(adj, x)
         return self.linear(out)
 
 class TrafficGNN(nn.Module):
-    def __init__(self, in_features, hidden_dim=64, num_classes=4, seq_len=5):
+    def __init__(self, in_features, hidden_dim=256, num_classes=4, seq_len=5):
         super().__init__()
         self.seq_len = seq_len
         
-        self.conv1 = GCNConv(in_features, hidden_dim)
-        self.conv2 = GCNConv(hidden_dim, hidden_dim)
-        self.conv3 = GCNConv(hidden_dim, hidden_dim)
+        self.feature_map = nn.Sequential(
+            nn.Linear(in_features, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.2)
+        )
         
-        self.relu = nn.RReLU(lower=0.1, upper=0.2)
-        self.dropout = nn.Dropout(0.25)
+        self.conv1 = GCNConv(hidden_dim, hidden_dim)
+        self.conv2 = GCNConv(hidden_dim, hidden_dim)
+        
+        # --- FIXED: Swapped nn.RReLU out for MPS-native nn.LeakyReLU ---
+        self.relu = nn.LeakyReLU(0.1)
+        self.dropout = nn.Dropout(0.2)
         self.layer_norm = nn.LayerNorm(hidden_dim)
         
         self.gru = nn.GRU(
             input_size=hidden_dim, 
             hidden_size=hidden_dim, 
-            num_layers=2, 
+            num_layers=3, 
             batch_first=True, 
-            bidirectional=True,
-            dropout=0.2
+            bidirectional=False,
+            dropout=0.25
         )
         
         self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(hidden_dim, num_classes)
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(hidden_dim // 2, num_classes)
         )
 
     def forward(self, x, adj):
-        # Input shape expected: [Batch, Seq, Nodes, Features]
         batch_size, seq_len, num_nodes, in_features = x.shape
-        spatial_embeddings = []
+        x_mapped = self.feature_map(x) 
         
+        spatial_embeddings = []
         for t in range(seq_len):
-            xt = x[:, t, :, :] # Shape: [Batch, Nodes, Features]
+            xt = x_mapped[:, t, :, :] 
             h1 = self.relu(self.layer_norm(self.conv1(xt, adj)))
             h1 = self.dropout(h1)
             
             h2 = self.relu(self.layer_norm(self.conv2(h1, adj)))
-            h2 = self.dropout(h2)
-            
-            h3 = self.relu(self.layer_norm(self.conv3(h2, adj)))
-            h_spatial = self.dropout(h3 + h1)
+            h_spatial = self.dropout(h2 + h1)
             spatial_embeddings.append(h_spatial)
             
-        # Shape change: [Seq, Batch, Nodes, Hidden] -> [Batch, Nodes, Seq, Hidden]
         spatial_embeddings = torch.stack(spatial_embeddings, dim=0).permute(1, 2, 0, 3)
-        # Flatten batch and nodes together for GRU processing: [Batch * Nodes, Seq, Hidden]
         spatial_embeddings = spatial_embeddings.reshape(batch_size * num_nodes, seq_len, -1)
         
-        out, h_n = self.gru(spatial_embeddings)
+        out, _ = self.gru(spatial_embeddings)
+        latest_temporal_state = out[:, -1, :] 
         
-        forward_hidden = h_n[-2, :, :]
-        backward_hidden = h_n[-1, :, :]
-        combined_hidden = torch.cat([forward_hidden, backward_hidden], dim=-1)
-        
-        logits = self.classifier(combined_hidden)
-        # Reshape back to match nodes: [Batch, Nodes, Num_Classes]
+        logits = self.classifier(latest_temporal_state)
         return logits.view(batch_size, num_nodes, -1)
 
 class TrafficDataset(Dataset):
@@ -95,9 +94,9 @@ class TrafficDataset(Dataset):
         return self.data_list[idx]
 
 def collate_fn(batch):
-    xs = torch.stack([item[0] for item in batch], dim=0)   # [Batch, Seq, Nodes, Feats]
-    adjs = torch.stack([item[1] for item in batch], dim=0) # [Batch, Nodes, Nodes]
-    ys = torch.stack([item[2] for item in batch], dim=0)   # [Batch, Nodes]
+    xs = torch.stack([item[0] for item in batch], dim=0)   
+    adjs = torch.stack([item[1] for item in batch], dim=0) 
+    ys = torch.stack([item[2] for item in batch], dim=0)   
     return xs, adjs, ys
 
 def density_to_class(density):
@@ -226,6 +225,8 @@ def load_dataset(data_dir, seq_len=5):
     return dataset
 
 def main():
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    
     data_dir = 'processed_test/gnn_data'
     try:
         dataset = load_dataset(data_dir)
@@ -242,7 +243,7 @@ def main():
         return
 
     in_features = dataset[0][0].shape[2]
-    hidden_dim = 64
+    hidden_dim = 256 
     num_classes = 4
     
     all_feats = []
@@ -261,8 +262,8 @@ def main():
     train_data = scale_dataset(train_raw, mean, std)
     val_data = scale_dataset(val_raw, mean, std)
 
-    train_loader = DataLoader(TrafficDataset(train_data), batch_size=16, shuffle=True, collate_fn=collate_fn)
-    val_loader = DataLoader(TrafficDataset(val_data), batch_size=16, shuffle=False, collate_fn=collate_fn)
+    train_loader = DataLoader(TrafficDataset(train_data), batch_size=32, shuffle=True, collate_fn=collate_fn)
+    val_loader = DataLoader(TrafficDataset(val_data), batch_size=32, shuffle=False, collate_fn=collate_fn)
 
     all_y = []
     for _, _, y in train_data:
@@ -279,24 +280,25 @@ def main():
         
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
 
-    model = TrafficGNN(in_features, hidden_dim, num_classes)
-    optimizer = optim.AdamW(model.parameters(), lr=0.0005, weight_decay=1e-3)
-    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+    model = TrafficGNN(in_features, hidden_dim, num_classes).to(device)
+    optimizer = optim.AdamW(model.parameters(), lr=0.0004, weight_decay=2e-3) 
+    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor.to(device))
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=4)
 
-    print(f"Starting Robust Batched GNN Training. Features per node: {in_features}")
+    print(f"Starting High-Capacity GNN Training. Hardware target: {device.type.upper()}")
     
     best_f1 = 0.0
-    for epoch in range(1, 81):
+    for epoch in range(1, 41):
         model.train()
         epoch_loss = 0.0
         train_preds, train_targets = [], []
         
         for x_b, adj_b, y_b in train_loader:
-            optimizer.zero_grad()
-            out = model(x_b, adj_b) # [Batch, Nodes, Num_Classes]
+            x_b, adj_b, y_b = x_b.to(device), adj_b.to(device), y_b.to(device)
             
-            # Flatten to evaluate loss across all graph nodes at once
+            optimizer.zero_grad()
+            out = model(x_b, adj_b) 
+            
             loss = criterion(out.view(-1, num_classes), y_b.view(-1))
             loss.backward()
             
@@ -315,6 +317,8 @@ def main():
         val_loss = 0.0
         with torch.no_grad():
             for x_b, adj_b, y_b in val_loader:
+                x_b, adj_b, y_b = x_b.to(device), adj_b.to(device), y_b.to(device)
+                
                 out = model(x_b, adj_b)
                 loss = criterion(out.view(-1, num_classes), y_b.view(-1))
                 val_loss += loss.item() * x_b.size(0)
@@ -329,7 +333,8 @@ def main():
         if val_f1 > best_f1:
             best_f1 = val_f1
             os.makedirs('models', exist_ok=True)
-            torch.save(model.state_dict(), 'models/model_gnn.pt')
+            torch.save(model.to('cpu').state_dict(), 'models/model_gnn.pt')
+            model.to(device) 
             torch.save({'mean': torch.tensor(mean, dtype=torch.float32), 'std': torch.tensor(std, dtype=torch.float32)}, 'models/scaler.pt')
 
         if epoch % 5 == 0 or epoch == 1:

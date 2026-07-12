@@ -353,7 +353,13 @@ export const Dashboard = () => {
                     <span className="text-xs font-semibold text-slate-600">Auto Spawn Regulation</span>
                     <button
                         type="button"
-                        onClick={() => setAutoSpawnRate(!autoSpawnRate)}
+                        onClick={() => {
+                            const next = !autoSpawnRate
+                            setAutoSpawnRate(next)
+                            if (next) {
+                                setSpawnRate(24.0)
+                            }
+                        }}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
                             autoSpawnRate ? 'bg-teal-600' : 'bg-slate-300'
                         }`}
