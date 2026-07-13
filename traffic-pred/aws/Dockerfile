@@ -1,13 +1,17 @@
-# Usiamo l'immagine ufficiale AWS per Python 3.9
-FROM public.ecr.aws/lambda/python:3.9
+FROM public.ecr.aws/lambda/python:3.10
 
-# Copiamo il file dei requisiti e li installiamo
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
-RUN pip install -r requirements.txt
 
-# Copiamo lo script della Lambda e il modello addestrato
-COPY app.py ${LAMBDA_TASK_ROOT}
-COPY model_rf.joblib ${LAMBDA_TASK_ROOT}
+# FIX: Force pip to use a stable temp directory and pass the extra index safely
+RUN TMPDIR=/tmp pip install \
+    --no-cache-dir \
+    -r requirements.txt \
+    --target "${LAMBDA_TASK_ROOT}" \
+    --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Diciamo ad AWS qual è la funzione da avviare (nomefile.nomefunzione)
-CMD [ "app.handler" ]
+# Copy application layers
+COPY run_server.py ${LAMBDA_TASK_ROOT}
+COPY train_gnn.py ${LAMBDA_TASK_ROOT}
+COPY models/ ${LAMBDA_TASK_ROOT}/models/
+
+CMD [ "run_server.lambda_handler" ]
