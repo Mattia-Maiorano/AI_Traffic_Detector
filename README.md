@@ -3,20 +3,20 @@
 Questo documento descrive l'architettura cloud implementata per l'inferenza del modello di Machine Learning, le modalità di deployment su AWS e la configurazione dei test di carico (Stress Testing) eseguiti tramite Locust.
 
 ## 1. Scopo del Modello su AWS
-Il modello caricato sull'infrastruttura cloud è un classificatore basato su **Random Forest**[cite: 3], precedentemente addestrato per prevedere lo stato di congestione stradale. 
+Il modello caricato sull'infrastruttura cloud è un classificatore basato su **Random Forest**, precedentemente addestrato per prevedere lo stato di congestione stradale. 
 Lo scopo di questo microservizio è ricevere in tempo reale dei file JSON (snapshot) generati da un simulatore React, elaborare lo stato attuale della rete stradale e restituire una previsione per ogni singola tratta (edge).
 
-Il modello analizza tre feature principali per ogni strada[cite: 2, 3]:
-* `count`: il numero di veicoli presenti[cite: 2, 3].
-* `edgeCapacity`: la capacità massima della strada[cite: 2, 3].
-* `edgeDensity`: il rapporto di densità calcolato[cite: 2, 3].
+Il modello analizza tre feature principali per ogni strada:
+* `count`: il numero di veicoli presenti.
+* `edgeCapacity`: la capacità massima della strada.
+* `edgeDensity`: il rapporto di densità calcolato.
 
 Sulla base di questi dati, il modello classifica lo stato del traffico in quattro categorie: *Libero*, *Rallentato*, *Congestionato* o *Bloccato*[cite: 2].
 
 ## 2. Architettura e Processo di Deployment
 Il sistema è stato progettato utilizzando un'architettura **Serverless** su Amazon Web Services (AWS), garantendo elevata scalabilità e un modello di costo *pay-as-you-go*. Il deployment ha seguito questi passaggi tecnici:
 
-1. **Containerizzazione (Docker):** Il modello addestrato (`model_rf.joblib`), insieme allo script di gestione `app.py`[cite: 2] e alle dipendenze (es. `scikit-learn`, `pandas`), è stato pacchettizzato in un'immagine Docker.
+1. **Containerizzazione (Docker):** Il modello addestrato (`model_rf.joblib`), insieme allo script di gestione `app.py` e alle dipendenze (es. `scikit-learn`, `pandas`), è stato pacchettizzato in un'immagine Docker.
 2. **Amazon ECR (Elastic Container Registry):** L'immagine è stata etichettata e caricata su un repository ECR privato.
 3. **AWS Lambda:** È stata creata una funzione Lambda configurata per eseguire l'immagine caricata da ECR. Per garantire le performance ottimali del modello, sono state assegnate risorse specifiche (es. 1024 MB di RAM). 
     * *Nota architetturale:* A causa del file system di sola lettura di Lambda, che inibiva le operazioni di multiprocessing della libreria `joblib`, è stata configurata la variabile d'ambiente `JOBLIB_TEMP_FOLDER=/tmp` per deviare i file temporanei nell'unica porzione di disco scrivibile.
